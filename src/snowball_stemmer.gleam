@@ -1,12 +1,727 @@
-import gleam/io
+import gleam/bool
+import gleam/list
+import gleam/string
 import splitter
 
 pub fn main() -> Nil {
-  io.println("Hello from snowball_stemmer!")
+  echo "beautiful" |> stem
+  echo "fractionalize" |> stem
+  echo "naysayer" |> stem
+  echo "catalyze" |> stem
+  echo "toy" |> stem
+
+  Nil
 }
 
 /// Returns a word stem according to the  Porter2 / Snowball English
 /// word-stemming algorithm.
 pub fn stem(word: String) -> String {
-  todo
+  word
+  |> init_word
+  |> step0
+  |> step1a
+  |> step1b
+  |> step1c
+  |> step2
+  |> step3
+  |> step4
+  |> step5
+  |> fn(sw) { sw.drow }
+  |> string.lowercase
+  |> string.reverse
 }
+
+pub type SnowballWord {
+  SnowballWord(drow: String, length: Int, r2: Int, r1: Int)
+}
+
+pub fn step0(word: SnowballWord) -> SnowballWord {
+  let SnowballWord(drow, length, r2, r1) = word
+  case drow {
+    "'s'" <> mets -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
+
+    "s'" <> mets -> SnowballWord(mets, length - 2, r2 - 2, r1 - 2)
+
+    "'" <> mets -> SnowballWord(mets, length - 1, r1 - 1, r1 - 1)
+
+    _ -> word
+  }
+}
+
+pub fn step1a(word: SnowballWord) -> SnowballWord {
+  let SnowballWord(drow, length, r2, r1) = word
+
+  case drow {
+    "sess" <> mets -> SnowballWord("ss" <> mets, length - 2, r2 - 2, r1 - 2)
+
+    "dei" <> mets | "sei" <> mets -> {
+      case length > 4 {
+        True -> SnowballWord("i" <> mets, length - 2, r2 - 2, r1 - 2)
+        False -> SnowballWord("ei" <> mets, length - 1, r2 - 1, r1 - 1)
+      }
+    }
+
+    "su" <> _ | "ss" <> _ -> word
+
+    "s" <> mets -> {
+      case mets {
+        "a" <> _ | "e" <> _ | "i" <> _ | "o" <> _ | "u" <> _ | "y" <> _ -> word
+
+        _ ->
+          case string_contains_vowel(mets) {
+            False -> word
+            True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
+          }
+      }
+    }
+
+    _ -> word
+  }
+}
+
+pub fn step1b(word: SnowballWord) -> SnowballWord {
+  let SnowballWord(drow, length, r2, r1) = word
+
+  case drow {
+    "yldee" <> mets -> {
+      case r1 >= 5 {
+        True -> SnowballWord("ee" <> mets, length - 3, r2 - 3, r1 - 3)
+        False -> word
+      }
+    }
+
+    "dee" <> mets -> {
+      case r1 >= 3 {
+        True -> SnowballWord("ee" <> mets, length - 1, r2 - 1, r1 - 1)
+        False -> word
+      }
+    }
+
+    "ylgni" <> mets -> {
+      step1b_helper(word, mets, 5)
+    }
+
+    "ylde" <> mets -> {
+      step1b_helper(word, mets, 4)
+    }
+
+    "de" <> mets -> {
+      step1b_helper(word, mets, 2)
+    }
+
+    "gni" <> mets -> {
+      case mets {
+        "nni" | "tou" | "nnac" | "rreh" | "rrea" | "neve" -> word
+        "y" <> prev -> {
+          let prev_is_consonant = list.contains(consonants, prev)
+          case prev_is_consonant {
+            True -> SnowballWord("ei" <> prev, length - 4, r2 - 4, r1 - 4)
+            False -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
+          }
+        }
+        _ -> step1b_helper(word, mets, 3)
+      }
+    }
+
+    _ -> word
+  }
+}
+
+fn step1b_helper(word: SnowballWord, mets: String, suffix_length: Int) {
+  let SnowballWord(_, length, r2, r1) = word
+  case string_contains_vowel(mets) {
+    True -> {
+      case mets {
+        "ta" | "lb" | "zi" -> {
+          let length_reduction = suffix_length - 1
+          SnowballWord(
+            "e" <> mets,
+            length - length_reduction,
+            r2 - length_reduction,
+            r1 - length_reduction,
+          )
+        }
+
+        "bb" <> prev
+        | "dd" <> prev
+        | "ff" <> prev
+        | "gg" <> prev
+        | "mm" <> prev
+        | "nn" <> prev
+        | "pp" <> prev
+        | "rr" <> prev
+        | "tt" <> prev -> {
+          case prev {
+            "a" <> _ | "e" <> _ | "o" <> _ -> {
+              let length_reduction = suffix_length + 1
+              SnowballWord(
+                string.drop_start(mets, 1),
+                length - length_reduction,
+                r2 - length_reduction,
+                r1 - length_reduction,
+              )
+            }
+
+            _ ->
+              SnowballWord(
+                mets,
+                length - suffix_length,
+                r2 - suffix_length,
+                r1 - suffix_length,
+              )
+          }
+        }
+
+        _ -> {
+          case word_is_short(mets, r1 - suffix_length) {
+            True -> {
+              let length_reduction = suffix_length - 1
+              SnowballWord(
+                "e" <> mets,
+                length - length_reduction,
+                r2 - length_reduction,
+                r1 - length_reduction,
+              )
+            }
+
+            False ->
+              SnowballWord(
+                mets,
+                length - suffix_length,
+                r2 - suffix_length,
+                r1 - suffix_length,
+              )
+          }
+        }
+      }
+    }
+
+    False -> word
+  }
+}
+
+pub fn step1c(word: SnowballWord) -> SnowballWord {
+  let SnowballWord(drow, length, r2, r1) = word
+
+  case drow {
+    "y" <> mets | "Y" <> mets ->
+      case string.pop_grapheme(mets) {
+        Error(_) -> word
+        Ok(#(first, _)) -> {
+          case list.contains(consonants, first) {
+            False -> word
+            True -> {
+              case length > 2 {
+                False -> word
+                True -> SnowballWord("i" <> mets, length - 1, r2 - 1, r1 - 1)
+              }
+            }
+          }
+        }
+      }
+
+    _ -> word
+  }
+}
+
+pub fn step2(word: SnowballWord) -> SnowballWord {
+  let SnowballWord(drow, length, r2, r1) = word
+
+  case drow {
+    "lanoita" <> mets -> {
+      use <- bool.guard(r1 >= 7, word)
+      SnowballWord("eta" <> mets, length - 4, r2 - 4, r1 - 4)
+    }
+
+    "lanoit" <> mets -> {
+      use <- bool.guard(r1 >= 6, word)
+      SnowballWord("noit" <> mets, length - 2, r2 - 2, r1 - 2)
+    }
+
+    "icne" <> mets -> {
+      use <- bool.guard(r1 >= 4, word)
+      SnowballWord("ecne" <> mets, length, r2, r1)
+    }
+
+    "icna" <> mets -> {
+      use <- bool.guard(r1 >= 4, word)
+      SnowballWord("ecna" <> mets, length, r2, r1)
+    }
+
+    "ilba" <> mets -> {
+      use <- bool.guard(r1 >= 4, word)
+      SnowballWord("elba" <> mets, length, r2, r1)
+    }
+
+    "iltne" <> mets -> {
+      use <- bool.guard(r1 >= 5, word)
+      SnowballWord("tne" <> mets, length - 2, r2 - 2, r1 - 2)
+    }
+
+    "rezi" <> mets -> {
+      use <- bool.guard(r1 >= 5, word)
+      SnowballWord("ezi" <> mets, length - 1, r1 - 1, r1 - 1)
+    }
+
+    "noitazi" <> mets -> {
+      use <- bool.guard(r1 >= 7, word)
+      SnowballWord("ezi" <> mets, length - 4, r2 - 4, r1 - 4)
+    }
+
+    "noita" <> mets -> {
+      use <- bool.guard(r1 >= 5, word)
+      SnowballWord("eta" <> mets, length - 2, r2 - 2, r1 - 2)
+    }
+
+    "rota" <> mets -> {
+      use <- bool.guard(r1 >= 4, word)
+      SnowballWord("eta" <> mets, length - 1, r2 - 1, r1 - 1)
+    }
+
+    "msila" <> mets -> {
+      use <- bool.guard(r1 >= 5, word)
+      SnowballWord("la" <> mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "itila" <> mets -> {
+      use <- bool.guard(r1 >= 5, word)
+      SnowballWord("la" <> mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "illa" <> mets -> {
+      use <- bool.guard(r1 >= 4, word)
+      SnowballWord("la" <> mets, length - 2, r2 - 2, r1 - 2)
+    }
+
+    "ssenluf" <> mets -> {
+      use <- bool.guard(r1 >= 7, word)
+      SnowballWord("luf" <> mets, length - 4, r2 - 4, r1 - 4)
+    }
+
+    "ilsuo" <> mets -> {
+      use <- bool.guard(r1 >= 5, word)
+      SnowballWord("suo" <> mets, length - 2, r2 - 2, r1 - 2)
+    }
+
+    "ssensuo" <> mets -> {
+      use <- bool.guard(r1 >= 7, word)
+      SnowballWord("suo" <> mets, length - 4, r2 - 4, r1 - 4)
+    }
+
+    "ssenevi" <> mets -> {
+      use <- bool.guard(r1 >= 7, word)
+      SnowballWord("evi" <> mets, length - 4, r2 - 4, r1 - 4)
+    }
+
+    "itivi" <> mets -> {
+      use <- bool.guard(r1 >= 5, word)
+      SnowballWord("evi" <> mets, length - 2, r2 - 2, r1 - 2)
+    }
+
+    "itilib" <> mets -> {
+      use <- bool.guard(r1 >= 6, word)
+      SnowballWord("elb" <> mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "ilb" <> mets -> {
+      use <- bool.guard(r1 >= 3, word)
+      SnowballWord("elb" <> mets, length, r2, r1)
+    }
+
+    "tsigo" <> mets -> {
+      use <- bool.guard(r1 >= 5, word)
+      SnowballWord("go" <> mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "igo" <> mets -> {
+      use <- bool.guard(r1 >= 3, word)
+      case mets {
+        "l" <> _ -> SnowballWord("go" <> mets, length - 3, r2 - 3, r1 - 3)
+        _ -> word
+      }
+    }
+
+    "illuf" <> mets -> {
+      use <- bool.guard(r1 >= 5, word)
+      SnowballWord("luf" <> mets, length - 2, r2 - 2, r1 - 2)
+    }
+
+    "ilssel" <> mets -> {
+      use <- bool.guard(r1 >= 6, word)
+      SnowballWord("ssel" <> mets, length - 2, r2 - 2, r1 - 2)
+    }
+
+    "il" <> mets -> {
+      use <- bool.guard(r1 >= 6, word)
+      case mets {
+        "c" <> _
+        | "d" <> _
+        | "e" <> _
+        | "g" <> _
+        | "h" <> _
+        | "k" <> _
+        | "m" <> _
+        | "n" <> _
+        | "r" <> _
+        | "t" <> _ -> SnowballWord(mets, length - 2, r2 - 2, r1 - 2)
+        _ -> word
+      }
+    }
+
+    _ -> word
+  }
+}
+
+pub fn step3(word: SnowballWord) -> SnowballWord {
+  let SnowballWord(drow, length, r2, r1) = word
+
+  case drow {
+    "lanoita" <> mets -> {
+      use <- bool.guard(r1 >= 7, word)
+      SnowballWord("eta" <> mets, length - 4, r2 - 4, r1 - 4)
+    }
+
+    "lanoit" <> mets -> {
+      use <- bool.guard(r1 >= 6, word)
+      SnowballWord("noit" <> mets, length - 2, r2 - 2, r1 - 2)
+    }
+
+    "ezila" <> mets -> {
+      use <- bool.guard(r1 >= 5, word)
+      SnowballWord("la" <> mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "etaci" <> mets -> {
+      use <- bool.guard(r1 >= 5, word)
+      SnowballWord("ci" <> mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "itici" <> mets -> {
+      use <- bool.guard(r1 >= 5, word)
+      SnowballWord("ci" <> mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "laci" <> mets -> {
+      use <- bool.guard(r1 >= 4, word)
+      SnowballWord("ci" <> mets, length - 2, r2 - 2, r1 - 2)
+    }
+
+    "luf" <> mets -> {
+      use <- bool.guard(r1 >= 3, word)
+      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "ssen" <> mets -> {
+      use <- bool.guard(r1 >= 4, word)
+      SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
+    }
+
+    "evita" <> mets -> {
+      use <- bool.guard(r2 >= 5, word)
+      SnowballWord(mets, length - 5, r2 - 5, r1 - 5)
+    }
+
+    _ -> word
+  }
+}
+
+pub fn step4(word: SnowballWord) -> SnowballWord {
+  let SnowballWord(drow, length, r2, r1) = word
+
+  case drow {
+    "tneme" <> mets -> {
+      use <- bool.guard(r2 >= 5, word)
+      SnowballWord(mets, length - 5, r2 - 5, r1 - 5)
+    }
+
+    "tnem" <> mets -> {
+      use <- bool.guard(r2 >= 4, word)
+      SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
+    }
+
+    "tne" <> mets -> {
+      use <- bool.guard(r2 >= 3, word)
+      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "ecna" <> mets -> {
+      use <- bool.guard(r2 >= 4, word)
+      SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
+    }
+
+    "ecne" <> mets -> {
+      use <- bool.guard(r2 >= 4, word)
+      SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
+    }
+
+    "elba" <> mets -> {
+      use <- bool.guard(r2 >= 4, word)
+      SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
+    }
+
+    "elbi" <> mets -> {
+      use <- bool.guard(r2 >= 4, word)
+      SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
+    }
+
+    "ezi" <> mets -> {
+      use <- bool.guard(r2 >= 3, word)
+      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "evi" <> mets -> {
+      use <- bool.guard(r2 >= 3, word)
+      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "suo" <> mets -> {
+      use <- bool.guard(r2 >= 3, word)
+      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "iti" <> mets -> {
+      use <- bool.guard(r2 >= 3, word)
+      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "eta" <> mets -> {
+      use <- bool.guard(r2 >= 3, word)
+      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "msi" <> mets -> {
+      use <- bool.guard(r2 >= 3, word)
+      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "tna" <> mets -> {
+      use <- bool.guard(r2 >= 3, word)
+      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
+    }
+
+    "la" <> mets -> {
+      use <- bool.guard(r2 >= 2, word)
+      SnowballWord(mets, length - 2, r2 - 2, r1 - 2)
+    }
+
+    "re" <> mets -> {
+      use <- bool.guard(r2 >= 2, word)
+      SnowballWord(mets, length - 2, r2 - 2, r1 - 2)
+    }
+
+    "ci" <> mets -> {
+      use <- bool.guard(r2 >= 2, word)
+      SnowballWord(mets, length - 2, r2 - 2, r1 - 2)
+    }
+
+    "noi" <> mets -> {
+      use <- bool.guard(r2 >= 3, word)
+      case mets {
+        "s" <> _ | "t" <> _ -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
+        _ -> word
+      }
+    }
+
+    _ -> word
+  }
+}
+
+pub fn step5(word: SnowballWord) -> SnowballWord {
+  let SnowballWord(drow, length, r2, r1) = word
+  case drow {
+    "e" <> mets -> {
+      case r2 >= 1 {
+        True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
+        False -> {
+          case r1 >= 1 && !syllable_is_short(mets) {
+            True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
+            False -> word
+          }
+        }
+      }
+    }
+
+    "l" <> mets -> {
+      case r2 >= 1 {
+        False -> word
+        True -> {
+          case mets {
+            "l" <> _ -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
+            _ -> word
+          }
+        }
+      }
+    }
+    _ -> word
+  }
+}
+
+fn string_contains_vowel(str: String) -> Bool {
+  list.any(string.to_graphemes(str), fn(c) { list.contains(vowels, c) })
+}
+
+fn word_is_short(word: String, r1: Int) -> Bool {
+  use <- bool.guard(r1 > 0, False)
+  case word {
+    "tsap" <> _ -> True
+    _ ->
+      case string.pop_grapheme(word) {
+        Error(_) -> False
+        Ok(#("w", _)) | Ok(#("x", _)) | Ok(#("Y", _)) -> False
+        Ok(#(_, rest)) ->
+          case string.pop_grapheme(rest) {
+            Error(_) -> False
+            Ok(#("a", rest))
+            | Ok(#("e", rest))
+            | Ok(#("i", rest))
+            | Ok(#("o", rest))
+            | Ok(#("u", rest))
+            | Ok(#("y", rest)) -> {
+              case string.pop_grapheme(rest) {
+                Error(_) -> False
+                Ok(#(first, _)) -> list.contains(consonants, first)
+              }
+            }
+            Ok(#(_, _)) -> False
+          }
+      }
+  }
+}
+
+fn syllable_is_short(syl: String) -> Bool {
+  case syl {
+    "tsap" <> _ -> True
+    _ ->
+      case string.pop_grapheme(syl) {
+        Error(_) -> False
+        Ok(#("w", rest)) | Ok(#("x", rest)) | Ok(#("Y", rest)) -> {
+          case string.pop_grapheme(rest) {
+            Error(_) -> False
+            Ok(#("a", rest))
+            | Ok(#("e", rest))
+            | Ok(#("i", rest))
+            | Ok(#("o", rest))
+            | Ok(#("u", rest))
+            | Ok(#("y", rest)) -> {
+              case rest {
+                "" -> True
+                _ -> False
+              }
+            }
+            Ok(#(_, _)) -> False
+          }
+        }
+        Ok(#(_, rest)) ->
+          case string.pop_grapheme(rest) {
+            Error(_) -> False
+            Ok(#("a", rest))
+            | Ok(#("e", rest))
+            | Ok(#("i", rest))
+            | Ok(#("o", rest))
+            | Ok(#("u", rest))
+            | Ok(#("y", rest)) -> {
+              case string.pop_grapheme(rest) {
+                Error(_) -> False
+                Ok(#(first, _)) -> list.contains(consonants, first)
+              }
+            }
+            Ok(#(_, _)) -> False
+          }
+      }
+  }
+}
+
+pub fn init_word(word: String) -> SnowballWord {
+  let word = word |> remove_initial_apostrophe |> mark_consonant_y
+  let length = string.length(word)
+  let #(r1, r2) = get_r1r2(word)
+  let r1 = string.length(r1)
+  let r2 = string.length(r2)
+  SnowballWord(string.reverse(word), length, r2, r1)
+}
+
+/// Gets the R1 and R2 region of a word
+/// 
+///  R1 is the region after the first non-vowel following a vowel, or the
+/// end of the word if there is no such non-vowel.
+pub fn get_r1r2(word: String) -> #(String, String) {
+  let vowel_splitter = splitter.new(vowels)
+  let consonant_splitter = splitter.new(consonants)
+
+  let #(_, word) = splitter.split_after(vowel_splitter, word)
+  case word {
+    "" -> #("", "")
+    _ -> {
+      let #(_, r1) = splitter.split_after(consonant_splitter, word)
+
+      let #(_, word) = splitter.split_after(vowel_splitter, r1)
+      case word {
+        "" -> #(r1, "")
+        _ -> {
+          let #(_, r2) = splitter.split_after(consonant_splitter, word)
+          #(r1, r2)
+        }
+      }
+    }
+  }
+}
+
+pub fn remove_initial_apostrophe(word: String) -> String {
+  case word {
+    "'" <> rest -> rest
+    _ -> word
+  }
+}
+
+pub fn mark_consonant_y(word: String) -> String {
+  case string.pop_grapheme(word) {
+    Error(_) -> ""
+    Ok(#(first, _)) -> {
+      let first = case first {
+        "y" -> "Y"
+        _ -> first
+      }
+
+      first
+      <> {
+        let letters = string.to_graphemes(word)
+
+        fn(a, b) {
+          let a_is_vowel = list.contains(vowels, a)
+          case a, b {
+            _, "y" if a_is_vowel -> "Y"
+            _, b -> b
+          }
+        }
+        |> list.map2(letters, list.drop(letters, 1), _)
+        |> list.fold("", fn(a, b) { a <> b })
+      }
+    }
+  }
+}
+
+pub const vowels = ["a", "e", "i", "o", "u", "y"]
+
+pub const consonants = [
+  "b",
+  "c",
+  "d",
+  "f",
+  "g",
+  "h",
+  "j",
+  "k",
+  "l",
+  "m",
+  "n",
+  "p",
+  "q",
+  "r",
+  "s",
+  "t",
+  "v",
+  "w",
+  "x",
+  "Y",
+  "z",
+]
