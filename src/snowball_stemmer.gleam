@@ -42,7 +42,7 @@ pub fn step0(word: SnowballWord) -> SnowballWord {
 
     "s'" <> mets -> SnowballWord(mets, length - 2, r2 - 2, r1 - 2)
 
-    "'" <> mets -> SnowballWord(mets, length - 1, r1 - 1, r1 - 1)
+    "'" <> mets -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
 
     _ -> word
   }
@@ -64,14 +64,14 @@ pub fn step1a(word: SnowballWord) -> SnowballWord {
     "su" <> _ | "ss" <> _ -> word
 
     "s" <> mets -> {
-      case mets {
-        "a" <> _ | "e" <> _ | "i" <> _ | "o" <> _ | "u" <> _ | "y" <> _ -> word
-
-        _ ->
-          case string_contains_vowel(mets) {
+      case string.pop_grapheme(mets) {
+        Error(_) -> word
+        Ok(#(_, rest)) -> {
+          case string_contains_vowel(rest) {
             False -> word
             True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
           }
+        }
       }
     }
 
@@ -632,7 +632,9 @@ fn syllable_is_short(syl: String) -> Bool {
 }
 
 pub fn init_word(word: String) -> SnowballWord {
-  let word = word |> remove_initial_apostrophe |> mark_consonant_y
+  let word =
+    word |> string.lowercase |> remove_initial_apostrophe |> mark_consonant_y
+
   let length = string.length(word)
   let #(r1, r2) = get_r1r2(word)
   let r1 = string.length(r1)
