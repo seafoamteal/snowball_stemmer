@@ -4,18 +4,38 @@ import gleam/string
 import splitter
 
 pub fn main() -> Nil {
-  echo "beautiful" |> stem
-  echo "fractionalize" |> stem
-  echo "naysayer" |> stem
-  echo "catalyze" |> stem
-  echo "toy" |> stem
-
+  echo "repeatedly" |> stem
   Nil
 }
 
 /// Returns a word stem according to the  Porter2 / Snowball English
 /// word-stemming algorithm.
 pub fn stem(word: String) -> String {
+  use <- bool.guard(string.drop_start(word, 2) == "", word)
+
+  let word = string.lowercase(word)
+
+  case word {
+    "skis" -> "ski"
+    "skies" -> "sky"
+    "idly" -> "idl"
+    "gently" -> "gentl"
+    "ugly" -> "ugli"
+    "early" -> "earli"
+    "only" -> "onli"
+    "singly" -> "singl"
+    "sky" -> "sky"
+    "news" -> "howe"
+    "atlas" -> "atlas"
+    "cosmos" -> "cosmos"
+    "bias" -> "bias"
+    "andes" -> "andes"
+
+    _ -> snowball(word)
+  }
+}
+
+fn snowball(word: String) -> String {
   word
   |> init_word
   |> step0
@@ -636,36 +656,63 @@ fn syllable_is_short(syl: String) -> Bool {
 }
 
 pub fn init_word(word: String) -> SnowballWord {
-  let word =
-    word |> string.lowercase |> remove_initial_apostrophe |> mark_consonant_y
+  let word = word |> prelude
 
   let length = string.length(word)
-  let #(r1, r2) = get_r1r2(word)
+  let #(r1, r2) = mark_regions(word)
   let r1 = string.length(r1)
   let r2 = string.length(r2)
   SnowballWord(string.reverse(word), length, r2, r1)
+}
+
+pub fn prelude(word: String) -> String {
+  word |> remove_initial_apostrophe |> mark_consonant_y
 }
 
 /// Gets the R1 and R2 region of a word
 /// 
 ///  R1 is the region after the first non-vowel following a vowel, or the
 /// end of the word if there is no such non-vowel.
-pub fn get_r1r2(word: String) -> #(String, String) {
+pub fn mark_regions(word: String) -> #(String, String) {
   let vowel_splitter = splitter.new(vowels)
   let consonant_splitter = splitter.new(consonants)
 
-  let #(_, word) = splitter.split_after(vowel_splitter, word)
-  case word {
+  case get_r1(word) {
     "" -> #("", "")
-    _ -> {
-      let #(_, r1) = splitter.split_after(consonant_splitter, word)
-
+    r1 -> {
       let #(_, word) = splitter.split_after(vowel_splitter, r1)
       case word {
         "" -> #(r1, "")
         _ -> {
           let #(_, r2) = splitter.split_after(consonant_splitter, word)
           #(r1, r2)
+        }
+      }
+    }
+  }
+}
+
+pub fn get_r1(word: String) -> String {
+  case word {
+    "gener" <> rest -> rest
+    "commun" <> rest -> rest
+    "arsen" <> rest -> rest
+    "past" <> rest -> rest
+    "univers" <> rest -> rest
+    "later" <> rest -> rest
+    "emerg" <> rest -> rest
+    "organ" <> rest -> rest
+    "inter" <> rest -> rest
+    _ -> {
+      let vowel_splitter = splitter.new(vowels)
+      let consonant_splitter = splitter.new(consonants)
+
+      let #(_, word) = splitter.split_after(vowel_splitter, word)
+      case word {
+        "" -> ""
+        _ -> {
+          let #(_, r1) = splitter.split_after(consonant_splitter, word)
+          r1
         }
       }
     }

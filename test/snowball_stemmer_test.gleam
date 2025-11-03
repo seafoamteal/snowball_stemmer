@@ -1,3 +1,4 @@
+import gleam/string
 import gleeunit
 import gleeunit/should
 import snowball_stemmer.{SnowballWord}
@@ -6,34 +7,49 @@ pub fn main() -> Nil {
   gleeunit.main()
 }
 
+pub fn stem_test() {
+  "consistory" |> snowball_stemmer.stem |> should.equal("consistori")
+  "kneeling" |> snowball_stemmer.stem |> should.equal("kneel")
+  "consolations" |> snowball_stemmer.stem |> should.equal("consol")
+  "repeatedly" |> snowball_stemmer.stem |> should.equal("repeat")
+  "severely" |> snowball_stemmer.stem |> should.equal("sever")
+}
+
 pub fn init_word_test() {
   "" |> snowball_stemmer.init_word |> should.equal(SnowballWord("", 0, 0, 0))
 
   "beautiful"
+  |> string.lowercase
   |> snowball_stemmer.init_word
   |> should.equal(SnowballWord("lufituaeb", 9, 2, 4))
 
   "BEAUTY"
+  |> string.lowercase
   |> snowball_stemmer.init_word
   |> should.equal(SnowballWord("ytuaeb", 6, 0, 1))
 
   "beau"
+  |> string.lowercase
   |> snowball_stemmer.init_word
   |> should.equal(SnowballWord("uaeb", 4, 0, 0))
 
   "yamMeR"
+  |> string.lowercase
   |> snowball_stemmer.init_word
   |> should.equal(SnowballWord("remmaY", 6, 0, 3))
 
   "'calyx"
+  |> string.lowercase
   |> snowball_stemmer.init_word
   |> should.equal(SnowballWord("xylac", 5, 0, 2))
 
   "eucharIST"
+  |> string.lowercase
   |> snowball_stemmer.init_word
   |> should.equal(SnowballWord("tsirahcue", 9, 3, 6))
 
   "'poetaster'"
+  |> string.lowercase
   |> snowball_stemmer.init_word
   |> should.equal(SnowballWord("'retsateop", 10, 4, 6))
 }
