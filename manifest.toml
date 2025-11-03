@@ -2,12 +2,21 @@
 # You typically do not need to edit this file
 
 packages = [
+  { name = "benchee", version = "1.5.0", build_tools = ["mix"], requirements = ["deep_merge", "statistex", "table"], otp_app = "benchee", source = "hex", outer_checksum = "5B075393AEA81B8AE74EADD1C28B1D87E8A63696C649D8293DB7C4DF3EB67535" },
+  { name = "deep_merge", version = "1.0.0", build_tools = ["mix"], requirements = [], otp_app = "deep_merge", source = "hex", outer_checksum = "CE708E5F094B9CD4E8F2BE4F00D2F4250C4095BE93F8CD6D018C753894885430" },
+  { name = "filepath", version = "1.1.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "B06A9AF0BF10E51401D64B98E4B627F1D2E48C154967DA7AF4D0914780A6D40A" },
   { name = "gleam_stdlib", version = "0.65.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "7C69C71D8C493AE11A5184828A77110EB05A7786EBF8B25B36A72F879C3EE107" },
   { name = "gleeunit", version = "1.7.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "CD701726CBCE5588B375D157B4391CFD0F2F134CD12D9B6998A395484DE05C58" },
+  { name = "glychee", version = "1.1.2", build_tools = ["gleam"], requirements = ["benchee"], otp_app = "glychee", source = "hex", outer_checksum = "41784216C213F223095BB3FC3EDDB60CC537835B2340A868EA3931193F7F3824" },
+  { name = "simplifile", version = "2.3.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "0A868DAC6063D9E983477981839810DC2E553285AB4588B87E3E9C96A7FB4CB4" },
   { name = "splitter", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "splitter", source = "hex", outer_checksum = "05564A381580395DCDEFF4F88A64B021E8DAFA6540AE99B4623962F52976AA9D" },
+  { name = "statistex", version = "1.1.0", build_tools = ["mix"], requirements = [], otp_app = "statistex", source = "hex", outer_checksum = "F5950EA26AD43246BA2CCE54324AC394A4E7408FDCF98B8E230F503A0CBA9CF5" },
 ]
 
 [requirements]
+filepath = { version = ">= 1.1.2 and < 2.0.0" }
 gleam_stdlib = { version = ">= 0.44.0 and < 2.0.0" }
 gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
+glychee = { version = ">= 1.1.2 and < 2.0.0" }
+simplifile = { version = ">= 2.3.0 and < 3.0.0" }
 splitter = { version = ">= 1.1.0 and < 2.0.0" }
