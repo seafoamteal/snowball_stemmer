@@ -39,12 +39,6 @@ pub fn init_word_test() {
 }
 
 pub fn step0_test() {
-  let after_step0 = fn(word: String) {
-    word
-    |> snowball_stemmer.init_word
-    |> snowball_stemmer.step0
-  }
-
   "horology"
   |> after_step0
   |> should.equal(SnowballWord("ygoloroh", 8, 3, 5))
@@ -63,13 +57,6 @@ pub fn step0_test() {
 }
 
 pub fn step1a_test() {
-  let after_step1a = fn(word: String) {
-    word
-    |> snowball_stemmer.init_word
-    |> snowball_stemmer.step0
-    |> snowball_stemmer.step1a
-  }
-
   "molasses"
   |> after_step1a
   |> should.equal(SnowballWord("ssalom", 6, 1, 3))
@@ -96,14 +83,6 @@ pub fn step1a_test() {
 }
 
 pub fn step1b_test() {
-  let after_step1b = fn(word: String) {
-    word
-    |> snowball_stemmer.init_word
-    |> snowball_stemmer.step0
-    |> snowball_stemmer.step1a
-    |> snowball_stemmer.step1b
-  }
-
   "needly"
   |> after_step1b
   |> should.equal(SnowballWord("yldeen", 6, 0, 2))
@@ -150,15 +129,6 @@ pub fn step1b_test() {
 }
 
 pub fn step1c_test() {
-  let after_step1c = fn(word: String) {
-    word
-    |> snowball_stemmer.init_word
-    |> snowball_stemmer.step0
-    |> snowball_stemmer.step1a
-    |> snowball_stemmer.step1b
-    |> snowball_stemmer.step1c
-  }
-
   "calcifying"
   |> after_step1c
   |> should.equal(SnowballWord("ificlac", 7, 1, 4))
@@ -174,4 +144,156 @@ pub fn step1c_test() {
   "say"
   |> after_step1c
   |> should.equal(SnowballWord("Yas", 3, 0, 0))
+}
+
+pub fn step2_test() {
+  "fractional"
+  |> after_step2
+  |> should.equal(SnowballWord("noitcarf", 8, 0, 4))
+
+  "nervousness"
+  |> after_step2
+  |> should.equal(SnowballWord("suovren", 7, 0, 4))
+
+  "national"
+  |> after_step2
+  |> should.equal(SnowballWord("lanoitan", 8, 2, 5))
+
+  "bogies"
+  |> after_step2
+  |> should.equal(SnowballWord("igob", 4, -2, 1))
+
+  "analogies"
+  |> after_step2
+  |> should.equal(SnowballWord("golana", 6, 2, 4))
+
+  "gladly"
+  |> after_step2
+  |> should.equal(SnowballWord("dalg", 4, -2, 0))
+
+  "monopoly"
+  |> after_step2
+  |> should.equal(SnowballWord("iloponom", 8, 3, 5))
+}
+
+pub fn step3_test() {
+  "replication"
+  |> after_step3
+  |> should.equal(SnowballWord("cilper", 6, 0, 3))
+
+  "emptiness"
+  |> after_step3
+  |> should.equal(SnowballWord("itpme", 5, -1, 3))
+
+  "derivative"
+  |> after_step3
+  |> should.equal(SnowballWord("vired", 5, 0, 2))
+
+  "palliative"
+  |> after_step3
+  |> should.equal(SnowballWord("evitaillap", 10, 3, 7))
+}
+
+pub fn step4_test() {
+  "fractionalize"
+  |> after_step4
+  |> should.equal(SnowballWord("noitcarf", 8, 0, 4))
+
+  "fractionalise"
+  |> after_step4
+  |> should.equal(SnowballWord("esilanoitcarf", 13, 5, 9))
+
+  "implementation"
+  |> after_step4
+  |> should.equal(SnowballWord("tnemelpmi", 9, 3, 7))
+
+  "atonement"
+  |> after_step4
+  |> should.equal(SnowballWord("nota", 4, 0, 2))
+
+  "cation"
+  |> after_step4
+  |> should.equal(SnowballWord("noitac", 6, 0, 3))
+
+  "aversion"
+  |> after_step4
+  |> should.equal(SnowballWord("sreva", 5, 1, 3))
+
+  "pygmalion"
+  |> after_step4
+  |> should.equal(SnowballWord("noilamgyp", 9, 3, 6))
+}
+
+pub fn step5_test() {
+  "atone"
+  |> after_step5
+  |> should.equal(SnowballWord("nota", 4, 0, 2))
+
+  "grouse"
+  |> after_step5
+  |> should.equal(SnowballWord("suorg", 5, -1, 0))
+
+  "take"
+  |> after_step5
+  |> should.equal(SnowballWord("ekat", 4, 0, 1))
+
+  "apalling"
+  |> after_step5
+  |> should.equal(SnowballWord("lapa", 4, 0, 2))
+
+  "falling"
+  |> after_step5
+  |> should.equal(SnowballWord("llaf", 4, -2, 1))
+
+  "acetyl"
+  |> after_step5
+  |> should.equal(SnowballWord("lyteca", 6, 2, 4))
+}
+
+fn after_step0(word: String) {
+  word
+  |> snowball_stemmer.init_word
+  |> snowball_stemmer.step0
+}
+
+fn after_step1a(word: String) {
+  word
+  |> after_step0
+  |> snowball_stemmer.step1a
+}
+
+fn after_step1b(word: String) {
+  word
+  |> after_step1a
+  |> snowball_stemmer.step1b
+}
+
+fn after_step1c(word: String) {
+  word
+  |> after_step1b
+  |> snowball_stemmer.step1c
+}
+
+fn after_step2(word: String) {
+  word
+  |> after_step1c
+  |> snowball_stemmer.step2
+}
+
+fn after_step3(word: String) {
+  word
+  |> after_step2
+  |> snowball_stemmer.step3
+}
+
+fn after_step4(word: String) {
+  word
+  |> after_step3
+  |> snowball_stemmer.step4
+}
+
+fn after_step5(word: String) {
+  word
+  |> after_step4
+  |> snowball_stemmer.step5
 }
