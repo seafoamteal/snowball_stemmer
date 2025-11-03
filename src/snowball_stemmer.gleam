@@ -113,10 +113,14 @@ pub fn step1b(word: SnowballWord) -> SnowballWord {
       case mets {
         "nni" | "tou" | "nnac" | "rreh" | "rrea" | "neve" -> word
         "y" <> prev -> {
-          let prev_is_consonant = list.contains(consonants, prev)
-          case prev_is_consonant {
-            True -> SnowballWord("ei" <> prev, length - 4, r2 - 4, r1 - 4)
-            False -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
+          case string.pop_grapheme(prev) {
+            Ok(#(c, "")) -> {
+              case list.contains(consonants, c) {
+                True -> SnowballWord("ei" <> c, length - 2, 0, 0)
+                False -> step1b_helper(word, mets, 3)
+              }
+            }
+            _ -> step1b_helper(word, mets, 3)
           }
         }
         _ -> step1b_helper(word, mets, 3)
@@ -132,7 +136,7 @@ fn step1b_helper(word: SnowballWord, mets: String, suffix_length: Int) {
   case string_contains_vowel(mets) {
     True -> {
       case mets {
-        "ta" | "lb" | "zi" -> {
+        "ta" <> _ | "lb" <> _ | "zi" <> _ -> {
           let length_reduction = suffix_length - 1
           SnowballWord(
             "e" <> mets,
@@ -152,7 +156,15 @@ fn step1b_helper(word: SnowballWord, mets: String, suffix_length: Int) {
         | "rr" <> prev
         | "tt" <> prev -> {
           case prev {
-            "a" <> _ | "e" <> _ | "o" <> _ -> {
+            "a" | "e" | "o" ->
+              SnowballWord(
+                mets,
+                length - suffix_length,
+                r2 - suffix_length,
+                r1 - suffix_length,
+              )
+
+            _ -> {
               let length_reduction = suffix_length + 1
               SnowballWord(
                 string.drop_start(mets, 1),
@@ -161,14 +173,6 @@ fn step1b_helper(word: SnowballWord, mets: String, suffix_length: Int) {
                 r1 - length_reduction,
               )
             }
-
-            _ ->
-              SnowballWord(
-                mets,
-                length - suffix_length,
-                r2 - suffix_length,
-                r1 - suffix_length,
-              )
           }
         }
 
@@ -213,7 +217,7 @@ pub fn step1c(word: SnowballWord) -> SnowballWord {
             True -> {
               case length > 2 {
                 False -> word
-                True -> SnowballWord("i" <> mets, length - 1, r2 - 1, r1 - 1)
+                True -> SnowballWord("i" <> mets, length, r2, r1)
               }
             }
           }
