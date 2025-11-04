@@ -1,61 +1,69 @@
 import gleam/string
 
-// import gleeunit
+import gleeunit
 import gleeunit/should
 import snowball_stemmer.{SnowballWord}
 import snowball_stemmer_test/support
 
 pub fn main() -> Nil {
-  // support.test_full_list()
-  support.bench()
+  support.test_full_list()
+  // support.bench()
   // gleeunit.main()
 }
 
 pub fn stem_test() {
-  "consistory" |> snowball_stemmer.stem |> should.equal("consistori")
-  "kneeling" |> snowball_stemmer.stem |> should.equal("kneel")
-  "consolations" |> snowball_stemmer.stem |> should.equal("consol")
-  "repeatedly" |> snowball_stemmer.stem |> should.equal("repeat")
-  "severely" |> snowball_stemmer.stem |> should.equal("sever")
-  "equipped" |> snowball_stemmer.stem |> should.equal("equip")
+  let stemmer = snowball_stemmer.new()
+  "consistory"
+  |> snowball_stemmer.stem(stemmer, _)
+  |> should.equal("consistori")
+
+  "kneeling" |> snowball_stemmer.stem(stemmer, _) |> should.equal("kneel")
+  "consolations" |> snowball_stemmer.stem(stemmer, _) |> should.equal("consol")
+  "repeatedly" |> snowball_stemmer.stem(stemmer, _) |> should.equal("repeat")
+  "severely" |> snowball_stemmer.stem(stemmer, _) |> should.equal("sever")
+  "equipped" |> snowball_stemmer.stem(stemmer, _) |> should.equal("equip")
 }
 
 pub fn init_word_test() {
-  "" |> snowball_stemmer.init_word |> should.equal(SnowballWord("", 0, 0, 0))
+  let stemmer = snowball_stemmer.new()
+
+  ""
+  |> snowball_stemmer.init_word(stemmer, _)
+  |> should.equal(SnowballWord("", 0, 0, 0))
 
   "beautiful"
   |> string.lowercase
-  |> snowball_stemmer.init_word
+  |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("lufituaeb", 9, 2, 4))
 
   "BEAUTY"
   |> string.lowercase
-  |> snowball_stemmer.init_word
+  |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("ytuaeb", 6, 0, 1))
 
   "beau"
   |> string.lowercase
-  |> snowball_stemmer.init_word
+  |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("uaeb", 4, 0, 0))
 
   "yamMeR"
   |> string.lowercase
-  |> snowball_stemmer.init_word
+  |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("remmaY", 6, 0, 3))
 
   "'calyx"
   |> string.lowercase
-  |> snowball_stemmer.init_word
+  |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("xylac", 5, 0, 2))
 
   "eucharIST"
   |> string.lowercase
-  |> snowball_stemmer.init_word
+  |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("tsirahcue", 9, 3, 6))
 
   "'poetaster'"
   |> string.lowercase
-  |> snowball_stemmer.init_word
+  |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("'retsateop", 10, 4, 6))
 }
 
@@ -272,8 +280,9 @@ pub fn step5_test() {
 }
 
 fn after_step0(word: String) {
+  let stemmer = snowball_stemmer.new()
   word
-  |> snowball_stemmer.init_word
+  |> snowball_stemmer.init_word(stemmer, _)
   |> snowball_stemmer.step0
 }
 

@@ -4,14 +4,26 @@ import gleam/string
 import splitter
 
 pub fn main() -> Nil {
-  echo "repeatedly" |> stem
   Nil
+}
+
+pub opaque type Stemmer {
+  Stemmer(
+    vowel_splitter: splitter.Splitter,
+    consonant_splitter: splitter.Splitter,
+  )
+}
+
+pub fn new() -> Stemmer {
+  let vowel_splitter = splitter.new(vowels)
+  let consonant_splitter = splitter.new(consonants)
+  Stemmer(vowel_splitter:, consonant_splitter:)
 }
 
 /// Returns a word stem according to the  Porter2 / Snowball English
 /// word-stemming algorithm.
-pub fn stem(word: String) -> String {
-  use <- bool.guard(string.drop_start(word, 2) == "", word)
+pub fn stem(stemmer: Stemmer, word: String) -> String {
+  use <- bool.guard(string.byte_size(word) <= 2, word)
 
   let word = string.lowercase(word)
 
@@ -32,13 +44,13 @@ pub fn stem(word: String) -> String {
     "bias" -> "bias"
     "andes" -> "andes"
 
-    _ -> snowball(word)
+    _ -> snowball(stemmer, word)
   }
 }
 
-fn snowball(word: String) -> String {
+fn snowball(stemmer: Stemmer, word: String) -> String {
   word
-  |> init_word
+  |> init_word(stemmer, _)
   |> step0
   |> step1a
   |> step1b
@@ -629,58 +641,11 @@ fn syllable_is_short(syl: String) -> Bool {
   }
 }
 
-// fn syllable_is_short(syl: String) -> Bool {
-//   case syl {
-//     "tsap" <> _ -> True
-//     _ ->
-//       case string.pop_grapheme(syl) {
-//         Error(_) -> False
-//         Ok(#("w", rest)) | Ok(#("x", rest)) | Ok(#("Y", rest)) -> {
-//           case string.pop_grapheme(rest) {
-//             Error(_) -> False
-//             Ok(#("a", rest))
-//             | Ok(#("e", rest))
-//             | Ok(#("i", rest))
-//             | Ok(#("o", rest))
-//             | Ok(#("u", rest))
-//             | Ok(#("y", rest)) -> {
-//               case rest {
-//                 "" -> True
-//                 _ -> False
-//               }
-//             }
-//             Ok(#(_, _)) -> False
-//           }
-//         }
-//         Ok(#(c, rest)) ->
-//           case list.contains(consonants, c) {
-//             False -> False
-//             True ->
-//               case string.pop_grapheme(rest) {
-//                 Error(_) -> False
-//                 Ok(#("a", rest))
-//                 | Ok(#("e", rest))
-//                 | Ok(#("i", rest))
-//                 | Ok(#("o", rest))
-//                 | Ok(#("u", rest))
-//                 | Ok(#("y", rest)) -> {
-//                   case string.pop_grapheme(rest) {
-//                     Error(_) -> False
-//                     Ok(#(first, _)) -> list.contains(consonants, first)
-//                   }
-//                 }
-//                 Ok(#(_, _)) -> False
-//               }
-//           }
-//       }
-//   }
-// }
-
-pub fn init_word(word: String) -> SnowballWord {
+pub fn init_word(stemmer: Stemmer, word: String) -> SnowballWord {
   let word = word |> prelude
 
   let length = string.length(word)
-  let #(r1, r2) = mark_regions(word)
+  let #(r1, r2) = mark_regions(stemmer, word)
   let r1 = string.length(r1)
   let r2 = string.length(r2)
   SnowballWord(string.reverse(word), length, r2, r1)
@@ -694,11 +659,10 @@ pub fn prelude(word: String) -> String {
 /// 
 ///  R1 is the region after the first non-vowel following a vowel, or the
 /// end of the word if there is no such non-vowel.
-pub fn mark_regions(word: String) -> #(String, String) {
-  let vowel_splitter = splitter.new(vowels)
-  let consonant_splitter = splitter.new(consonants)
+pub fn mark_regions(stemmer: Stemmer, word: String) -> #(String, String) {
+  let Stemmer(vowel_splitter, consonant_splitter) = stemmer
 
-  case get_r1(word) {
+  case get_r1(stemmer, word) {
     "" -> #("", "")
     r1 -> {
       let #(_, word) = splitter.split_after(vowel_splitter, r1)
@@ -713,7 +677,7 @@ pub fn mark_regions(word: String) -> #(String, String) {
   }
 }
 
-pub fn get_r1(word: String) -> String {
+pub fn get_r1(stemmer: Stemmer, word: String) -> String {
   case word {
     "gener" <> rest -> rest
     "commun" <> rest -> rest
@@ -725,8 +689,7 @@ pub fn get_r1(word: String) -> String {
     "organ" <> rest -> rest
     "inter" <> rest -> rest
     _ -> {
-      let vowel_splitter = splitter.new(vowels)
-      let consonant_splitter = splitter.new(consonants)
+      let Stemmer(vowel_splitter, consonant_splitter) = stemmer
 
       let #(_, word) = splitter.split_after(vowel_splitter, word)
       case word {

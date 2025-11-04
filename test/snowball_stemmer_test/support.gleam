@@ -13,12 +13,13 @@ const data_dir = "test/data"
 
 pub fn test_full_list() {
   let test_cases = load_test_data()
+  let stemmer = snowball_stemmer.new()
 
   test_cases
   |> dict.keys
   |> list.map(fn(word) {
     let assert Ok(expected) = dict.get(test_cases, word)
-    word |> snowball_stemmer.stem |> should.equal(expected)
+    word |> snowball_stemmer.stem(stemmer, _) |> should.equal(expected)
   })
 
   Nil
@@ -30,9 +31,12 @@ pub fn bench() {
   bench.run(
     [bench.Input("all words", test_cases)],
     [
-      bench.Function("snowball", fn(words) {
-        words |> list.map(snowball_stemmer.stem)
+      bench.SetupFunction("setup", fn(_) {
+        let stemmer = snowball_stemmer.new()
+
+        fn(words) { words |> list.map(snowball_stemmer.stem(stemmer, _)) }
       }),
+
       bench.Function("porter", fn(words) {
         words |> list.map(porter_stemmer.stem)
       }),
