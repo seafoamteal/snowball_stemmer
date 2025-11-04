@@ -25,7 +25,8 @@ pub fn stem(word: String) -> String {
     "only" -> "onli"
     "singly" -> "singl"
     "sky" -> "sky"
-    "news" -> "howe"
+    "news" -> "news"
+    "howe" -> "howe"
     "atlas" -> "atlas"
     "cosmos" -> "cosmos"
     "bias" -> "bias"
@@ -104,16 +105,18 @@ pub fn step1b(word: SnowballWord) -> SnowballWord {
 
   case drow {
     "yldee" <> mets -> {
-      case r1 >= 5 {
-        True -> SnowballWord("ee" <> mets, length - 3, r2 - 3, r1 - 3)
-        False -> word
+      use <- bool.guard(r1 < 5, word)
+      case mets {
+        "corp" <> _ | "cxe" <> _ | "ccus" <> _ -> word
+        _ -> SnowballWord("ee" <> mets, length - 3, r2 - 3, r1 - 3)
       }
     }
 
     "dee" <> mets -> {
-      case r1 >= 3 {
-        True -> SnowballWord("ee" <> mets, length - 1, r2 - 1, r1 - 1)
-        False -> word
+      use <- bool.guard(r1 < 3, word)
+      case mets {
+        "corp" <> _ | "cxe" <> _ | "ccus" <> _ -> word
+        _ -> SnowballWord("ee" <> mets, length - 1, r2 - 1, r1 - 1)
       }
     }
 
@@ -131,7 +134,7 @@ pub fn step1b(word: SnowballWord) -> SnowballWord {
 
     "gni" <> mets -> {
       case mets {
-        "nni" | "tou" | "nnac" | "rreh" | "rrea" | "neve" -> word
+        "nni" | "tuo" | "nnac" | "rreh" | "rrae" | "neve" -> word
         "y" <> prev -> {
           case string.pop_grapheme(prev) {
             Ok(#(c, "")) -> {
@@ -586,74 +589,92 @@ fn string_contains_vowel(str: String) -> Bool {
 
 fn word_is_short(word: String, r1: Int) -> Bool {
   use <- bool.guard(r1 > 0, False)
-  case word {
-    "tsap" <> _ -> True
-    _ ->
-      case string.pop_grapheme(word) {
-        Error(_) -> False
-        Ok(#("w", _)) | Ok(#("x", _)) | Ok(#("Y", _)) -> False
-        Ok(#(_, rest)) ->
-          case string.pop_grapheme(rest) {
-            Error(_) -> False
-            Ok(#("a", rest))
-            | Ok(#("e", rest))
-            | Ok(#("i", rest))
-            | Ok(#("o", rest))
-            | Ok(#("u", rest))
-            | Ok(#("y", rest)) -> {
-              case string.pop_grapheme(rest) {
-                Error(_) -> False
-                Ok(#(first, _)) -> list.contains(consonants, first)
-              }
-            }
-            Ok(#(_, _)) -> False
-          }
-      }
-  }
+  syllable_is_short(word)
 }
 
 fn syllable_is_short(syl: String) -> Bool {
-  case syl {
-    "tsap" <> _ -> True
-    _ ->
-      case string.pop_grapheme(syl) {
-        Error(_) -> False
-        Ok(#("w", rest)) | Ok(#("x", rest)) | Ok(#("Y", rest)) -> {
+  use <- bool.guard(string.slice(syl, 0, 4) == "tsap", True)
+
+  case string.pop_grapheme(syl) {
+    Error(_) -> False
+
+    Ok(#(first, rest)) -> {
+      use <- bool.guard(list.contains(vowels, first), False)
+
+      case first {
+        "w" | "x" | "Y" -> {
           case string.pop_grapheme(rest) {
             Error(_) -> False
-            Ok(#("a", rest))
-            | Ok(#("e", rest))
-            | Ok(#("i", rest))
-            | Ok(#("o", rest))
-            | Ok(#("u", rest))
-            | Ok(#("y", rest)) -> {
-              case rest {
-                "" -> True
-                _ -> False
-              }
+            Ok(#(second, rest)) -> {
+              list.contains(vowels, second) && rest == ""
             }
-            Ok(#(_, _)) -> False
           }
         }
-        Ok(#(_, rest)) ->
+
+        _ -> {
           case string.pop_grapheme(rest) {
             Error(_) -> False
-            Ok(#("a", rest))
-            | Ok(#("e", rest))
-            | Ok(#("i", rest))
-            | Ok(#("o", rest))
-            | Ok(#("u", rest))
-            | Ok(#("y", rest)) -> {
+            Ok(#(second, rest)) -> {
+              use <- bool.guard(!list.contains(vowels, second), False)
+
               case string.pop_grapheme(rest) {
-                Error(_) -> False
-                Ok(#(first, _)) -> list.contains(consonants, first)
+                Error(Nil) -> True
+                Ok(#(third, _)) -> list.contains(consonants, third)
               }
             }
-            Ok(#(_, _)) -> False
           }
+        }
       }
+    }
   }
 }
+
+// fn syllable_is_short(syl: String) -> Bool {
+//   case syl {
+//     "tsap" <> _ -> True
+//     _ ->
+//       case string.pop_grapheme(syl) {
+//         Error(_) -> False
+//         Ok(#("w", rest)) | Ok(#("x", rest)) | Ok(#("Y", rest)) -> {
+//           case string.pop_grapheme(rest) {
+//             Error(_) -> False
+//             Ok(#("a", rest))
+//             | Ok(#("e", rest))
+//             | Ok(#("i", rest))
+//             | Ok(#("o", rest))
+//             | Ok(#("u", rest))
+//             | Ok(#("y", rest)) -> {
+//               case rest {
+//                 "" -> True
+//                 _ -> False
+//               }
+//             }
+//             Ok(#(_, _)) -> False
+//           }
+//         }
+//         Ok(#(c, rest)) ->
+//           case list.contains(consonants, c) {
+//             False -> False
+//             True ->
+//               case string.pop_grapheme(rest) {
+//                 Error(_) -> False
+//                 Ok(#("a", rest))
+//                 | Ok(#("e", rest))
+//                 | Ok(#("i", rest))
+//                 | Ok(#("o", rest))
+//                 | Ok(#("u", rest))
+//                 | Ok(#("y", rest)) -> {
+//                   case string.pop_grapheme(rest) {
+//                     Error(_) -> False
+//                     Ok(#(first, _)) -> list.contains(consonants, first)
+//                   }
+//                 }
+//                 Ok(#(_, _)) -> False
+//               }
+//           }
+//       }
+//   }
+// }
 
 pub fn init_word(word: String) -> SnowballWord {
   let word = word |> prelude

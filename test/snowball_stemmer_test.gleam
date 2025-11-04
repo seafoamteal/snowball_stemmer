@@ -2,8 +2,10 @@ import gleam/string
 import gleeunit
 import gleeunit/should
 import snowball_stemmer.{SnowballWord}
+import snowball_stemmer_test/support
 
 pub fn main() -> Nil {
+  support.test_full_list()
   gleeunit.main()
 }
 
@@ -13,6 +15,7 @@ pub fn stem_test() {
   "consolations" |> snowball_stemmer.stem |> should.equal("consol")
   "repeatedly" |> snowball_stemmer.stem |> should.equal("repeat")
   "severely" |> snowball_stemmer.stem |> should.equal("sever")
+  "equipped" |> snowball_stemmer.stem |> should.equal("equip")
 }
 
 pub fn init_word_test() {
