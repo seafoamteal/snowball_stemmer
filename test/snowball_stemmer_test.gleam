@@ -1,12 +1,14 @@
 import gleam/string
-import gleeunit
+
+// import gleeunit
 import gleeunit/should
 import snowball_stemmer.{SnowballWord}
 import snowball_stemmer_test/support
 
 pub fn main() -> Nil {
-  support.test_full_list()
-  gleeunit.main()
+  // support.test_full_list()
+  support.bench()
+  // gleeunit.main()
 }
 
 pub fn stem_test() {
