@@ -1,14 +1,41 @@
+import argv
+import gleam/int
+import gleam/io
 import gleam/string
-
+import gleam_community/ansi
 import gleeunit
 import gleeunit/should
 import snowball_stemmer.{SnowballWord}
 import snowball_stemmer_test/support
 
 pub fn main() -> Nil {
-  support.test_full_list()
-  // support.bench()
-  // gleeunit.main()
+  case argv.load().arguments {
+    [] -> gleeunit.main()
+    ["full"] -> {
+      case support.test_full_list() {
+        Ok(n) -> {
+          io.println(ansi.green(
+            "Tested "
+            <> int.to_string(n)
+            <> " words and all were stemmed correctly!",
+          ))
+        }
+        Error(triple) -> {
+          io.println_error(ansi.red(
+            "Failed on word '"
+            <> triple.0
+            <> "'. Expected '"
+            <> triple.1
+            <> "' but got '"
+            <> triple.2
+            <> "'.",
+          ))
+        }
+      }
+    }
+    ["bench"] -> support.bench()
+    _ -> io.println_error("Usage: gleam test [-- full | benchmark]")
+  }
 }
 
 pub fn stem_test() {
