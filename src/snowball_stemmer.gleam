@@ -14,6 +14,11 @@ pub opaque type Stemmer {
   )
 }
 
+/// Creates a new Stemmer object to be used with `stem`.
+/// Can and _should_ be used across multiple calls to `stem` because
+/// it is essentially a cache for the `splitter`s used in the stemming and
+/// so improves performance by performing the expensive `splitter` creation
+/// only once.
 pub fn new() -> Stemmer {
   let vowel_splitter = splitter.new(vowels)
   let consonant_splitter = splitter.new(consonants)
@@ -52,8 +57,8 @@ fn snowball(stemmer: Stemmer, word: String) -> String {
   word
   |> init_word(stemmer, _)
   |> step0
-  |> step1a
-  |> step1b
+  |> step1a(stemmer, _)
+  |> step1b(stemmer, _)
   |> step1c
   |> step2
   |> step3
@@ -81,7 +86,7 @@ pub fn step0(word: SnowballWord) -> SnowballWord {
   }
 }
 
-pub fn step1a(word: SnowballWord) -> SnowballWord {
+pub fn step1a(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
 
   case drow {
@@ -100,7 +105,7 @@ pub fn step1a(word: SnowballWord) -> SnowballWord {
       case string.pop_grapheme(mets) {
         Error(_) -> word
         Ok(#(_, rest)) -> {
-          case string_contains_vowel(rest) {
+          case string_contains_vowel(stemmer, rest) {
             False -> word
             True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
           }
@@ -112,7 +117,7 @@ pub fn step1a(word: SnowballWord) -> SnowballWord {
   }
 }
 
-pub fn step1b(word: SnowballWord) -> SnowballWord {
+pub fn step1b(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
 
   case drow {
@@ -133,15 +138,15 @@ pub fn step1b(word: SnowballWord) -> SnowballWord {
     }
 
     "ylgni" <> mets -> {
-      step1b_helper(word, mets, 5)
+      step1b_helper(stemmer, word, mets, 5)
     }
 
     "ylde" <> mets -> {
-      step1b_helper(word, mets, 4)
+      step1b_helper(stemmer, word, mets, 4)
     }
 
     "de" <> mets -> {
-      step1b_helper(word, mets, 2)
+      step1b_helper(stemmer, word, mets, 2)
     }
 
     "gni" <> mets -> {
@@ -152,13 +157,13 @@ pub fn step1b(word: SnowballWord) -> SnowballWord {
             Ok(#(c, "")) -> {
               case list.contains(consonants, c) {
                 True -> SnowballWord("ei" <> c, length - 2, 0, 0)
-                False -> step1b_helper(word, mets, 3)
+                False -> step1b_helper(stemmer, word, mets, 3)
               }
             }
-            _ -> step1b_helper(word, mets, 3)
+            _ -> step1b_helper(stemmer, word, mets, 3)
           }
         }
-        _ -> step1b_helper(word, mets, 3)
+        _ -> step1b_helper(stemmer, word, mets, 3)
       }
     }
 
@@ -166,9 +171,14 @@ pub fn step1b(word: SnowballWord) -> SnowballWord {
   }
 }
 
-fn step1b_helper(word: SnowballWord, mets: String, suffix_length: Int) {
+fn step1b_helper(
+  stemmer: Stemmer,
+  word: SnowballWord,
+  mets: String,
+  suffix_length: Int,
+) {
   let SnowballWord(_, length, r2, r1) = word
-  case string_contains_vowel(mets) {
+  case string_contains_vowel(stemmer, mets) {
     True -> {
       case mets {
         "ta" <> _ | "lb" <> _ | "zi" <> _ -> {
@@ -595,8 +605,12 @@ pub fn step5(word: SnowballWord) -> SnowballWord {
   }
 }
 
-fn string_contains_vowel(str: String) -> Bool {
-  list.any(string.to_graphemes(str), fn(c) { list.contains(vowels, c) })
+fn string_contains_vowel(stemmer: Stemmer, str: String) -> Bool {
+  let Stemmer(vowel_splitter:, ..) = stemmer
+  case splitter.split(vowel_splitter, str) {
+    #(_, "", "") -> False
+    _ -> True
+  }
 }
 
 fn word_is_short(word: String, r1: Int) -> Bool {
