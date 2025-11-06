@@ -1,4 +1,3 @@
-import gleam/bool
 import gleam/string
 import splitter
 
@@ -28,29 +27,28 @@ pub fn new() -> Stemmer {
 /// Returns a word stem according to the  Porter2 / Snowball English
 /// word-stemming algorithm.
 pub fn stem(stemmer: Stemmer, word: String) -> String {
-  use <- bool.guard(string.byte_size(word) <= 2, word)
-
-  let word = word |> remove_initial_apostrophe |> lowercase_and_mark_ys
-
-  // handle exceptional cases
-  case word {
-    "skis" -> "ski"
-    "skies" -> "sky"
-    "idly" -> "idl"
-    "gently" -> "gentl"
-    "ugly" -> "ugli"
-    "early" -> "earli"
-    "only" -> "onli"
-    "singly" -> "singl"
-    "sky" -> "sky"
-    "news" -> "news"
-    "howe" -> "howe"
-    "atlas" -> "atlas"
-    "cosmos" -> "cosmos"
-    "bias" -> "bias"
-    "andes" -> "andes"
-
-    _ -> snowball(stemmer, word)
+  case string.byte_size(word) <= 2 {
+    True -> word
+    False ->
+      case lowercase_and_mark_ys(remove_initial_apostrophe(word)) {
+        // handle exceptional cases
+        "skis" -> "ski"
+        "skies" -> "sky"
+        "idly" -> "idl"
+        "gently" -> "gentl"
+        "ugly" -> "ugli"
+        "early" -> "earli"
+        "only" -> "onli"
+        "singly" -> "singl"
+        "sky" -> "sky"
+        "news" -> "news"
+        "howe" -> "howe"
+        "atlas" -> "atlas"
+        "cosmos" -> "cosmos"
+        "bias" -> "bias"
+        "andes" -> "andes"
+        word -> snowball(stemmer, word)
+      }
   }
 }
 
@@ -91,21 +89,19 @@ pub fn step1a(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   case drow {
     "sess" <> mets -> SnowballWord("ss" <> mets, length - 2, r2 - 2, r1 - 2)
 
-    "dei" <> mets | "sei" <> mets -> {
+    "dei" <> mets | "sei" <> mets ->
       case length > 4 {
         True -> SnowballWord("i" <> mets, length - 2, r2 - 2, r1 - 2)
         False -> SnowballWord("ei" <> mets, length - 1, r2 - 1, r1 - 1)
       }
-    }
 
     "su" <> _ | "ss" <> _ -> word
 
-    "s" <> mets -> {
+    "s" <> mets ->
       case string_contains_vowel_after_start(stemmer, mets) {
         False -> word
         True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
       }
-    }
 
     _ -> word
   }
@@ -117,33 +113,23 @@ pub fn step1b(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   let Stemmer(consonant_splitter:, ..) = stemmer
 
   case drow {
-    "yldee" <> mets -> {
-      use <- bool.guard(r1 < 5, word)
+    "yldee" <> _ if r1 < 5 -> word
+    "yldee" <> mets ->
       case mets {
         "corp" <> _ | "cxe" <> _ | "ccus" <> _ -> word
         _ -> SnowballWord("ee" <> mets, length - 3, r2 - 3, r1 - 3)
       }
-    }
 
-    "dee" <> mets -> {
-      use <- bool.guard(r1 < 3, word)
+    "dee" <> _ if r1 < 3 -> word
+    "dee" <> mets ->
       case mets {
         "corp" <> _ | "cxe" <> _ | "ccus" <> _ -> word
         _ -> SnowballWord("ee" <> mets, length - 1, r2 - 1, r1 - 1)
       }
-    }
 
-    "ylgni" <> mets -> {
-      step1b_helper(stemmer, word, mets, 5)
-    }
-
-    "ylde" <> mets -> {
-      step1b_helper(stemmer, word, mets, 4)
-    }
-
-    "de" <> mets -> {
-      step1b_helper(stemmer, word, mets, 2)
-    }
+    "ylgni" <> mets -> step1b_helper(stemmer, word, mets, 5)
+    "ylde" <> mets -> step1b_helper(stemmer, word, mets, 4)
+    "de" <> mets -> step1b_helper(stemmer, word, mets, 2)
 
     "gni" <> mets -> {
       case mets {
@@ -270,131 +256,84 @@ pub fn step2(word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
 
   case drow {
-    "lanoita" <> mets -> {
-      use <- bool.guard(r1 < 7, word)
-      SnowballWord("eta" <> mets, length - 4, r2 - 4, r1 - 4)
-    }
+    "lanoita" <> _ if r1 < 7 -> word
+    "lanoita" <> mets -> SnowballWord("eta" <> mets, length - 4, r2 - 4, r1 - 4)
 
-    "lanoit" <> mets -> {
-      use <- bool.guard(r1 < 6, word)
-      SnowballWord("noit" <> mets, length - 2, r2 - 2, r1 - 2)
-    }
+    "lanoit" <> _ if r1 < 6 -> word
+    "lanoit" <> mets -> SnowballWord("noit" <> mets, length - 2, r2 - 2, r1 - 2)
 
-    "icne" <> mets -> {
-      use <- bool.guard(r1 < 4, word)
-      SnowballWord("ecne" <> mets, length, r2, r1)
-    }
+    "icne" <> _ if r1 < 4 -> word
+    "icne" <> mets -> SnowballWord("ecne" <> mets, length, r2, r1)
 
-    "icna" <> mets -> {
-      use <- bool.guard(r1 < 4, word)
-      SnowballWord("ecna" <> mets, length, r2, r1)
-    }
+    "icna" <> _ if r1 < 4 -> word
+    "icna" <> mets -> SnowballWord("ecna" <> mets, length, r2, r1)
 
-    "ilba" <> mets -> {
-      use <- bool.guard(r1 < 4, word)
-      SnowballWord("elba" <> mets, length, r2, r1)
-    }
+    "ilba" <> _ if r1 < 4 -> word
+    "ilba" <> mets -> SnowballWord("elba" <> mets, length, r2, r1)
 
-    "iltne" <> mets -> {
-      use <- bool.guard(r1 < 5, word)
-      SnowballWord("tne" <> mets, length - 2, r2 - 2, r1 - 2)
-    }
+    "iltne" <> _ if r1 < 5 -> word
+    "iltne" <> mets -> SnowballWord("tne" <> mets, length - 2, r2 - 2, r1 - 2)
 
-    "rezi" <> mets -> {
-      use <- bool.guard(r1 < 4, word)
-      SnowballWord("ezi" <> mets, length - 1, r1 - 1, r1 - 1)
-    }
+    "rezi" <> _ if r1 < 4 -> word
+    "rezi" <> mets -> SnowballWord("ezi" <> mets, length - 1, r1 - 1, r1 - 1)
 
-    "noitazi" <> mets -> {
-      use <- bool.guard(r1 < 7, word)
-      SnowballWord("ezi" <> mets, length - 4, r2 - 4, r1 - 4)
-    }
+    "noitazi" <> _ if r1 < 7 -> word
+    "noitazi" <> mets -> SnowballWord("ezi" <> mets, length - 4, r2 - 4, r1 - 4)
 
-    "noita" <> mets -> {
-      use <- bool.guard(r1 < 5, word)
-      SnowballWord("eta" <> mets, length - 2, r2 - 2, r1 - 2)
-    }
+    "noita" <> _ if r1 < 5 -> word
+    "noita" <> mets -> SnowballWord("eta" <> mets, length - 2, r2 - 2, r1 - 2)
 
-    "rota" <> mets -> {
-      use <- bool.guard(r1 < 4, word)
-      SnowballWord("eta" <> mets, length - 1, r2 - 1, r1 - 1)
-    }
+    "rota" <> _ if r1 < 4 -> word
+    "rota" <> mets -> SnowballWord("eta" <> mets, length - 1, r2 - 1, r1 - 1)
 
-    "msila" <> mets -> {
-      use <- bool.guard(r1 < 5, word)
-      SnowballWord("la" <> mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "msila" <> _ if r1 < 5 -> word
+    "msila" <> mets -> SnowballWord("la" <> mets, length - 3, r2 - 3, r1 - 3)
 
-    "itila" <> mets -> {
-      use <- bool.guard(r1 < 5, word)
-      SnowballWord("la" <> mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "itila" <> _ if r1 < 5 -> word
+    "itila" <> mets -> SnowballWord("la" <> mets, length - 3, r2 - 3, r1 - 3)
 
-    "illa" <> mets -> {
-      use <- bool.guard(r1 < 4, word)
-      SnowballWord("la" <> mets, length - 2, r2 - 2, r1 - 2)
-    }
+    "illa" <> _ if r1 < 4 -> word
+    "illa" <> mets -> SnowballWord("la" <> mets, length - 2, r2 - 2, r1 - 2)
 
-    "ssenluf" <> mets -> {
-      use <- bool.guard(r1 < 7, word)
-      SnowballWord("luf" <> mets, length - 4, r2 - 4, r1 - 4)
-    }
+    "ssenluf" <> _ if r1 < 7 -> word
+    "ssenluf" <> mets -> SnowballWord("luf" <> mets, length - 4, r2 - 4, r1 - 4)
 
-    "ilsuo" <> mets -> {
-      use <- bool.guard(r1 < 5, word)
-      SnowballWord("suo" <> mets, length - 2, r2 - 2, r1 - 2)
-    }
+    "ilsuo" <> _ if r1 < 5 -> word
+    "ilsuo" <> mets -> SnowballWord("suo" <> mets, length - 2, r2 - 2, r1 - 2)
 
-    "ssensuo" <> mets -> {
-      use <- bool.guard(r1 < 7, word)
-      SnowballWord("suo" <> mets, length - 4, r2 - 4, r1 - 4)
-    }
+    "ssensuo" <> _ if r1 < 7 -> word
+    "ssensuo" <> mets -> SnowballWord("suo" <> mets, length - 4, r2 - 4, r1 - 4)
 
-    "ssenevi" <> mets -> {
-      use <- bool.guard(r1 < 7, word)
-      SnowballWord("evi" <> mets, length - 4, r2 - 4, r1 - 4)
-    }
+    "ssenevi" <> _ if r1 < 7 -> word
+    "ssenevi" <> mets -> SnowballWord("evi" <> mets, length - 4, r2 - 4, r1 - 4)
 
-    "itivi" <> mets -> {
-      use <- bool.guard(r1 < 5, word)
-      SnowballWord("evi" <> mets, length - 2, r2 - 2, r1 - 2)
-    }
+    "itivi" <> _ if r1 < 5 -> word
+    "itivi" <> mets -> SnowballWord("evi" <> mets, length - 2, r2 - 2, r1 - 2)
 
-    "itilib" <> mets -> {
-      use <- bool.guard(r1 < 6, word)
-      SnowballWord("elb" <> mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "itilib" <> _ if r1 < 6 -> word
+    "itilib" <> mets -> SnowballWord("elb" <> mets, length - 3, r2 - 3, r1 - 3)
 
-    "ilb" <> mets -> {
-      use <- bool.guard(r1 < 3, word)
-      SnowballWord("elb" <> mets, length, r2, r1)
-    }
+    "ilb" <> _ if r1 < 3 -> word
+    "ilb" <> mets -> SnowballWord("elb" <> mets, length, r2, r1)
 
-    "tsigo" <> mets -> {
-      use <- bool.guard(r1 < 5, word)
-      SnowballWord("go" <> mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "tsigo" <> _ if r1 < 5 -> word
+    "tsigo" <> mets -> SnowballWord("go" <> mets, length - 3, r2 - 3, r1 - 3)
 
-    "igo" <> mets -> {
-      use <- bool.guard(r1 < 3, word)
+    "igo" <> _ if r1 < 3 -> word
+    "igo" <> mets ->
       case mets {
         "l" <> _ -> SnowballWord("go" <> mets, length - 1, r2 - 1, r1 - 1)
         _ -> word
       }
-    }
 
-    "illuf" <> mets -> {
-      use <- bool.guard(r1 < 5, word)
-      SnowballWord("luf" <> mets, length - 2, r2 - 2, r1 - 2)
-    }
+    "illuf" <> _ if r1 < 5 -> word
+    "illuf" <> mets -> SnowballWord("luf" <> mets, length - 2, r2 - 2, r1 - 2)
 
-    "ilssel" <> mets -> {
-      use <- bool.guard(r1 < 6, word)
-      SnowballWord("ssel" <> mets, length - 2, r2 - 2, r1 - 2)
-    }
+    "ilssel" <> _ if r1 < 6 -> word
+    "ilssel" <> mets -> SnowballWord("ssel" <> mets, length - 2, r2 - 2, r1 - 2)
 
-    "il" <> mets -> {
-      use <- bool.guard(r1 < 2, word)
+    "il" <> _ if r1 < 2 -> word
+    "il" <> mets ->
       case mets {
         "c" <> _
         | "d" <> _
@@ -408,7 +347,6 @@ pub fn step2(word: SnowballWord) -> SnowballWord {
         | "t" <> _ -> SnowballWord(mets, length - 2, r2 - 2, r1 - 2)
         _ -> word
       }
-    }
 
     _ -> word
   }
@@ -419,50 +357,32 @@ pub fn step3(word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
 
   case drow {
-    "lanoita" <> mets -> {
-      use <- bool.guard(r1 < 7, word)
-      SnowballWord("eta" <> mets, length - 4, r2 - 4, r1 - 4)
-    }
+    "lanoita" <> _ if r1 < 7 -> word
+    "lanoita" <> mets -> SnowballWord("eta" <> mets, length - 4, r2 - 4, r1 - 4)
 
-    "lanoit" <> mets -> {
-      use <- bool.guard(r1 < 6, word)
-      SnowballWord("noit" <> mets, length - 2, r2 - 2, r1 - 2)
-    }
+    "lanoit" <> _ if r1 < 6 -> word
+    "lanoit" <> mets -> SnowballWord("noit" <> mets, length - 2, r2 - 2, r1 - 2)
 
-    "ezila" <> mets -> {
-      use <- bool.guard(r1 < 5, word)
-      SnowballWord("la" <> mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "ezila" <> _ if r1 < 5 -> word
+    "ezila" <> mets -> SnowballWord("la" <> mets, length - 3, r2 - 3, r1 - 3)
 
-    "etaci" <> mets -> {
-      use <- bool.guard(r1 < 5, word)
-      SnowballWord("ci" <> mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "etaci" <> _ if r1 < 5 -> word
+    "etaci" <> mets -> SnowballWord("ci" <> mets, length - 3, r2 - 3, r1 - 3)
 
-    "itici" <> mets -> {
-      use <- bool.guard(r1 < 5, word)
-      SnowballWord("ci" <> mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "itici" <> _ if r1 < 5 -> word
+    "itici" <> mets -> SnowballWord("ci" <> mets, length - 3, r2 - 3, r1 - 3)
 
-    "laci" <> mets -> {
-      use <- bool.guard(r1 < 4, word)
-      SnowballWord("ci" <> mets, length - 2, r2 - 2, r1 - 2)
-    }
+    "laci" <> _ if r1 < 4 -> word
+    "laci" <> mets -> SnowballWord("ci" <> mets, length - 2, r2 - 2, r1 - 2)
 
-    "luf" <> mets -> {
-      use <- bool.guard(r1 < 3, word)
-      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "luf" <> _ if r1 < 3 -> word
+    "luf" <> mets -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
 
-    "ssen" <> mets -> {
-      use <- bool.guard(r1 < 4, word)
-      SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
-    }
+    "ssen" <> _ if r1 < 4 -> word
+    "ssen" <> mets -> SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
 
-    "evita" <> mets -> {
-      use <- bool.guard(r2 < 5, word)
-      SnowballWord(mets, length - 5, r2 - 5, r1 - 5)
-    }
+    "evita" <> _ if r2 < 5 -> word
+    "evita" <> mets -> SnowballWord(mets, length - 5, r2 - 5, r1 - 5)
 
     _ -> word
   }
@@ -473,98 +393,63 @@ pub fn step4(word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
 
   case drow {
-    "tneme" <> mets -> {
-      use <- bool.guard(r2 < 5, word)
-      SnowballWord(mets, length - 5, r2 - 5, r1 - 5)
-    }
+    "tneme" <> _ if r2 < 5 -> word
+    "tneme" <> mets -> SnowballWord(mets, length - 5, r2 - 5, r1 - 5)
 
-    "tnem" <> mets -> {
-      use <- bool.guard(r2 < 4, word)
-      SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
-    }
+    "tnem" <> _ if r2 < 4 -> word
+    "tnem" <> mets -> SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
 
-    "tne" <> mets -> {
-      use <- bool.guard(r2 < 3, word)
-      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "tne" <> _ if r2 < 3 -> word
+    "tne" <> mets -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
 
-    "ecna" <> mets -> {
-      use <- bool.guard(r2 < 4, word)
-      SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
-    }
+    "ecna" <> _ if r2 < 4 -> word
+    "ecna" <> mets -> SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
 
-    "ecne" <> mets -> {
-      use <- bool.guard(r2 < 4, word)
-      SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
-    }
+    "ecne" <> _ if r2 < 4 -> word
+    "ecne" <> mets -> SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
 
-    "elba" <> mets -> {
-      use <- bool.guard(r2 < 4, word)
-      SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
-    }
+    "elba" <> _ if r2 < 4 -> word
+    "elba" <> mets -> SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
 
-    "elbi" <> mets -> {
-      use <- bool.guard(r2 < 4, word)
-      SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
-    }
+    "elbi" <> _ if r2 < 4 -> word
+    "elbi" <> mets -> SnowballWord(mets, length - 4, r2 - 4, r1 - 4)
 
-    "ezi" <> mets -> {
-      use <- bool.guard(r2 < 3, word)
-      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "ezi" <> _ if r2 < 3 -> word
+    "ezi" <> mets -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
 
-    "evi" <> mets -> {
-      use <- bool.guard(r2 < 3, word)
-      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "evi" <> _ if r2 < 3 -> word
+    "evi" <> mets -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
 
-    "suo" <> mets -> {
-      use <- bool.guard(r2 < 3, word)
-      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "suo" <> _ if r2 < 3 -> word
+    "suo" <> mets -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
 
-    "iti" <> mets -> {
-      use <- bool.guard(r2 < 3, word)
-      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "iti" <> _ if r2 < 3 -> word
+    "iti" <> mets -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
 
-    "eta" <> mets -> {
-      use <- bool.guard(r2 < 3, word)
-      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "eta" <> _ if r2 < 3 -> word
+    "eta" <> mets -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
 
-    "msi" <> mets -> {
-      use <- bool.guard(r2 < 3, word)
-      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "msi" <> _ if r2 < 3 -> word
+    "msi" <> mets -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
 
-    "tna" <> mets -> {
-      use <- bool.guard(r2 < 3, word)
-      SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
-    }
+    "tna" <> _ if r2 < 3 -> word
+    "tna" <> mets -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
 
-    "la" <> mets -> {
-      use <- bool.guard(r2 < 2, word)
-      SnowballWord(mets, length - 2, r2 - 2, r1 - 2)
-    }
+    "la" <> _ if r2 < 2 -> word
+    "la" <> mets -> SnowballWord(mets, length - 2, r2 - 2, r1 - 2)
 
-    "re" <> mets -> {
-      use <- bool.guard(r2 < 2, word)
-      SnowballWord(mets, length - 2, r2 - 2, r1 - 2)
-    }
+    "re" <> _ if r2 < 2 -> word
+    "re" <> mets -> SnowballWord(mets, length - 2, r2 - 2, r1 - 2)
 
-    "ci" <> mets -> {
-      use <- bool.guard(r2 < 2, word)
-      SnowballWord(mets, length - 2, r2 - 2, r1 - 2)
-    }
+    "ci" <> _ if r2 < 2 -> word
+    "ci" <> mets -> SnowballWord(mets, length - 2, r2 - 2, r1 - 2)
 
-    "noi" <> mets -> {
-      use <- bool.guard(r2 < 3, word)
+    "noi" <> _ if r2 < 3 -> word
+    "noi" <> mets ->
       case mets {
         "s" <> _ | "t" <> _ -> SnowballWord(mets, length - 3, r2 - 3, r1 - 3)
         _ -> word
       }
-    }
 
     _ -> word
   }
@@ -574,29 +459,20 @@ pub fn step4(word: SnowballWord) -> SnowballWord {
 pub fn step5(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
   case drow {
-    "e" <> mets -> {
-      case r2 >= 1 {
+    "e" <> mets if r2 >= 1 -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
+    "e" <> mets ->
+      case r1 >= 1 && !syllable_is_short(stemmer, mets) {
         True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
-        False -> {
-          case r1 >= 1 && !syllable_is_short(stemmer, mets) {
-            True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
-            False -> word
-          }
-        }
-      }
-    }
-
-    "l" <> mets -> {
-      case r2 >= 1 {
         False -> word
-        True -> {
-          case mets {
-            "l" <> _ -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
-            _ -> word
-          }
-        }
       }
-    }
+
+    "l" <> _ if r2 < 1 -> word
+    "l" <> mets ->
+      case mets {
+        "l" <> _ -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
+        _ -> word
+      }
+
     _ -> word
   }
 }
