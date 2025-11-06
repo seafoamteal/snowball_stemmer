@@ -19,8 +19,12 @@ pub type SnowballWord {
 /// so improves performance by performing the expensive `splitter` creation
 /// only once.
 pub fn new() -> Stemmer {
-  let vowel_splitter = splitter.new(vowels)
-  let consonant_splitter = splitter.new(consonants)
+  let vowel_splitter = splitter.new(["a", "e", "i", "o", "u", "y"])
+  let consonant_splitter =
+    splitter.new([
+      "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s",
+      "t", "v", "w", "x", "Y", "z",
+    ])
   Stemmer(vowel_splitter:, consonant_splitter:)
 }
 
@@ -678,29 +682,3 @@ fn get_r1(stemmer: Stemmer, word: String) -> String {
     }
   }
 }
-
-const vowels = ["a", "e", "i", "o", "u", "y"]
-
-const consonants = [
-  "b",
-  "c",
-  "d",
-  "f",
-  "g",
-  "h",
-  "j",
-  "k",
-  "l",
-  "m",
-  "n",
-  "p",
-  "q",
-  "r",
-  "s",
-  "t",
-  "v",
-  "w",
-  "x",
-  "Y",
-  "z",
-]
