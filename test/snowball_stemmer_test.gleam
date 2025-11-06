@@ -1,7 +1,6 @@
 import argv
 import gleam/int
 import gleam/io
-import gleam/string
 import gleam_community/ansi
 import gleeunit
 import gleeunit/should
@@ -56,41 +55,50 @@ pub fn init_word_test() {
   let stemmer = snowball_stemmer.new()
 
   ""
+  |> snowball_stemmer.remove_initial_apostrophe
+  |> snowball_stemmer.lowercase_and_mark_ys
   |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("", 0, 0, 0))
 
   "beautiful"
-  |> string.lowercase
+  |> snowball_stemmer.remove_initial_apostrophe
+  |> snowball_stemmer.lowercase_and_mark_ys
   |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("lufituaeb", 9, 2, 4))
 
   "BEAUTY"
-  |> string.lowercase
+  |> snowball_stemmer.remove_initial_apostrophe
+  |> snowball_stemmer.lowercase_and_mark_ys
   |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("ytuaeb", 6, 0, 1))
 
   "beau"
-  |> string.lowercase
+  |> snowball_stemmer.remove_initial_apostrophe
+  |> snowball_stemmer.lowercase_and_mark_ys
   |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("uaeb", 4, 0, 0))
 
   "yamMeR"
-  |> string.lowercase
+  |> snowball_stemmer.remove_initial_apostrophe
+  |> snowball_stemmer.lowercase_and_mark_ys
   |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("remmaY", 6, 0, 3))
 
   "'calyx"
-  |> string.lowercase
+  |> snowball_stemmer.remove_initial_apostrophe
+  |> snowball_stemmer.lowercase_and_mark_ys
   |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("xylac", 5, 0, 2))
 
   "eucharIST"
-  |> string.lowercase
+  |> snowball_stemmer.remove_initial_apostrophe
+  |> snowball_stemmer.lowercase_and_mark_ys
   |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("tsirahcue", 9, 3, 6))
 
   "'poetaster'"
-  |> string.lowercase
+  |> snowball_stemmer.remove_initial_apostrophe
+  |> snowball_stemmer.lowercase_and_mark_ys
   |> snowball_stemmer.init_word(stemmer, _)
   |> should.equal(SnowballWord("'retsateop", 10, 4, 6))
 }
@@ -323,6 +331,8 @@ pub fn step5_test() {
 
 fn after_step0(stemmer: Stemmer, word: String) {
   word
+  |> snowball_stemmer.remove_initial_apostrophe
+  |> snowball_stemmer.lowercase_and_mark_ys
   |> snowball_stemmer.init_word(stemmer, _)
   |> snowball_stemmer.step0
 }
@@ -342,7 +352,7 @@ fn after_step1b(stemmer: Stemmer, word: String) {
 fn after_step1c(stemmer: Stemmer, word: String) {
   word
   |> after_step1b(stemmer, _)
-  |> snowball_stemmer.step1c
+  |> snowball_stemmer.step1c(stemmer, _)
 }
 
 fn after_step2(stemmer: Stemmer, word: String) {
@@ -367,5 +377,5 @@ fn after_step5(word: String) {
   let stemmer = snowball_stemmer.new()
   word
   |> after_step4(stemmer, _)
-  |> snowball_stemmer.step5
+  |> snowball_stemmer.step5(stemmer, _)
 }

@@ -1,5 +1,4 @@
 import gleam/bool
-import gleam/list
 import gleam/string
 import splitter
 
@@ -30,7 +29,7 @@ pub fn new() -> Stemmer {
 pub fn stem(stemmer: Stemmer, word: String) -> String {
   use <- bool.guard(string.byte_size(word) <= 2, word)
 
-  let word = string.lowercase(word)
+  let word = word |> remove_initial_apostrophe |> lowercase_and_mark_ys
 
   case word {
     "skis" -> "ski"
@@ -59,11 +58,11 @@ fn snowball(stemmer: Stemmer, word: String) -> String {
   |> step0
   |> step1a(stemmer, _)
   |> step1b(stemmer, _)
-  |> step1c
+  |> step1c(stemmer, _)
   |> step2
   |> step3
   |> step4
-  |> step5
+  |> step5(stemmer, _)
   |> fn(sw) { sw.drow }
   |> string.lowercase
   |> string.reverse
@@ -102,14 +101,9 @@ pub fn step1a(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
     "su" <> _ | "ss" <> _ -> word
 
     "s" <> mets -> {
-      case string.pop_grapheme(mets) {
-        Error(_) -> word
-        Ok(#(_, rest)) -> {
-          case string_contains_vowel(stemmer, rest) {
-            False -> word
-            True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
-          }
-        }
+      case string_contains_vowel_after_start(stemmer, mets) {
+        False -> word
+        True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
       }
     }
 
@@ -119,6 +113,7 @@ pub fn step1a(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
 
 pub fn step1b(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
+  let Stemmer(consonant_splitter:, ..) = stemmer
 
   case drow {
     "yldee" <> mets -> {
@@ -153,13 +148,8 @@ pub fn step1b(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
       case mets {
         "nni" | "tuo" | "nnac" | "rreh" | "rrae" | "neve" -> word
         "y" <> prev -> {
-          case string.pop_grapheme(prev) {
-            Ok(#(c, "")) -> {
-              case list.contains(consonants, c) {
-                True -> SnowballWord("ei" <> c, length - 2, 0, 0)
-                False -> step1b_helper(stemmer, word, mets, 3)
-              }
-            }
+          case splitter.split(consonant_splitter, prev) {
+            #("", c, "") -> SnowballWord("ei" <> c, length - 2, 0, 0)
             _ -> step1b_helper(stemmer, word, mets, 3)
           }
         }
@@ -222,7 +212,7 @@ fn step1b_helper(
         }
 
         _ -> {
-          case word_is_short(mets, r1 - suffix_length) {
+          case word_is_short(stemmer, mets, r1 - suffix_length) {
             True -> {
               let length_reduction = suffix_length - 1
               SnowballWord(
@@ -249,24 +239,20 @@ fn step1b_helper(
   }
 }
 
-pub fn step1c(word: SnowballWord) -> SnowballWord {
+pub fn step1c(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
+  let Stemmer(consonant_splitter:, ..) = stemmer
 
   case drow {
     "y" <> mets | "Y" <> mets ->
-      case string.pop_grapheme(mets) {
-        Error(_) -> word
-        Ok(#(first, _)) -> {
-          case list.contains(consonants, first) {
+      case splitter.split(consonant_splitter, mets) {
+        #(_, "", "") -> word
+        #("", _, _) ->
+          case length > 2 {
             False -> word
-            True -> {
-              case length > 2 {
-                False -> word
-                True -> SnowballWord("i" <> mets, length, r2, r1)
-              }
-            }
+            True -> SnowballWord("i" <> mets, length, r2, r1)
           }
-        }
+        _ -> word
       }
 
     _ -> word
@@ -575,14 +561,14 @@ pub fn step4(word: SnowballWord) -> SnowballWord {
   }
 }
 
-pub fn step5(word: SnowballWord) -> SnowballWord {
+pub fn step5(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
   case drow {
     "e" <> mets -> {
       case r2 >= 1 {
         True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
         False -> {
-          case r1 >= 1 && !syllable_is_short(mets) {
+          case r1 >= 1 && !syllable_is_short(stemmer, mets) {
             True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
             False -> word
           }
@@ -613,51 +599,59 @@ fn string_contains_vowel(stemmer: Stemmer, str: String) -> Bool {
   }
 }
 
-fn word_is_short(word: String, r1: Int) -> Bool {
-  use <- bool.guard(r1 > 0, False)
-  syllable_is_short(word)
+fn string_contains_vowel_after_start(stemmer: Stemmer, str: String) -> Bool {
+  let Stemmer(vowel_splitter:, ..) = stemmer
+  case splitter.split(vowel_splitter, str) {
+    #(_, "", "") -> False
+    #("", _, rest) ->
+      case splitter.split(vowel_splitter, rest) {
+        #(_, "", "") -> False
+        _ -> True
+      }
+    _ -> True
+  }
 }
 
-fn syllable_is_short(syl: String) -> Bool {
+fn word_is_short(stemmer: Stemmer, word: String, r1: Int) -> Bool {
+  use <- bool.guard(r1 > 0, False)
+  syllable_is_short(stemmer, word)
+}
+
+fn syllable_is_short(stemmer: Stemmer, syl: String) -> Bool {
   use <- bool.guard(string.slice(syl, 0, 4) == "tsap", True)
+  let Stemmer(vowel_splitter:, consonant_splitter:) = stemmer
 
-  case string.pop_grapheme(syl) {
-    Error(_) -> False
-
-    Ok(#(first, rest)) -> {
-      use <- bool.guard(list.contains(vowels, first), False)
-
-      case first {
+  case splitter.split(consonant_splitter, syl) {
+    #(_, "", "") -> False
+    #("", c, rest) -> {
+      case c {
         "w" | "x" | "Y" -> {
-          case string.pop_grapheme(rest) {
-            Error(_) -> False
-            Ok(#(second, rest)) -> {
-              list.contains(vowels, second) && rest == ""
-            }
+          case splitter.split(vowel_splitter, rest) {
+            #("", _, "") -> True
+            _ -> False
           }
         }
 
         _ -> {
-          case string.pop_grapheme(rest) {
-            Error(_) -> False
-            Ok(#(second, rest)) -> {
-              use <- bool.guard(!list.contains(vowels, second), False)
-
-              case string.pop_grapheme(rest) {
-                Error(Nil) -> True
-                Ok(#(third, _)) -> list.contains(consonants, third)
+          case splitter.split(vowel_splitter, rest) {
+            #(_, "", "") -> False
+            #("", _, rest) ->
+              case splitter.split(consonant_splitter, rest) {
+                #("", "", "") -> True
+                #(_, "", "") -> False
+                #("", _, _) -> True
+                _ -> False
               }
-            }
+            _ -> False
           }
         }
       }
     }
+    _ -> False
   }
 }
 
 pub fn init_word(stemmer: Stemmer, word: String) -> SnowballWord {
-  let word = word |> prelude
-
   let length = string.length(word)
   let #(r1, r2) = mark_regions(stemmer, word)
   let r1 = string.length(r1)
@@ -665,8 +659,56 @@ pub fn init_word(stemmer: Stemmer, word: String) -> SnowballWord {
   SnowballWord(string.reverse(word), length, r2, r1)
 }
 
-pub fn prelude(word: String) -> String {
-  word |> remove_initial_apostrophe |> mark_consonant_y
+pub fn remove_initial_apostrophe(word: String) -> String {
+  case word {
+    "'" <> rest -> rest
+    _ -> word
+  }
+}
+
+pub fn lowercase_and_mark_ys(word: String) -> String {
+  mark_ys_loop(word, "", True)
+}
+
+fn mark_ys_loop(word: String, acc: String, last_vowel: Bool) -> String {
+  case string.pop_grapheme(word) {
+    Ok(#("y", rest)) | Ok(#("Y", rest)) -> {
+      case last_vowel {
+        True -> mark_ys_loop(rest, "Y" <> acc, False)
+        False -> mark_ys_loop(rest, "y" <> acc, True)
+      }
+    }
+    Ok(#("a", rest)) | Ok(#("A", rest)) -> mark_ys_loop(rest, "a" <> acc, True)
+    Ok(#("e", rest)) | Ok(#("E", rest)) -> mark_ys_loop(rest, "e" <> acc, True)
+    Ok(#("i", rest)) | Ok(#("I", rest)) -> mark_ys_loop(rest, "i" <> acc, True)
+    Ok(#("o", rest)) | Ok(#("O", rest)) -> mark_ys_loop(rest, "o" <> acc, True)
+    Ok(#("u", rest)) | Ok(#("U", rest)) -> mark_ys_loop(rest, "u" <> acc, True)
+
+    Ok(#("b", rest)) | Ok(#("B", rest)) -> mark_ys_loop(rest, "b" <> acc, False)
+    Ok(#("c", rest)) | Ok(#("C", rest)) -> mark_ys_loop(rest, "c" <> acc, False)
+    Ok(#("d", rest)) | Ok(#("D", rest)) -> mark_ys_loop(rest, "d" <> acc, False)
+    Ok(#("f", rest)) | Ok(#("F", rest)) -> mark_ys_loop(rest, "f" <> acc, False)
+    Ok(#("g", rest)) | Ok(#("G", rest)) -> mark_ys_loop(rest, "g" <> acc, False)
+    Ok(#("h", rest)) | Ok(#("H", rest)) -> mark_ys_loop(rest, "h" <> acc, False)
+    Ok(#("j", rest)) | Ok(#("J", rest)) -> mark_ys_loop(rest, "j" <> acc, False)
+    Ok(#("k", rest)) | Ok(#("K", rest)) -> mark_ys_loop(rest, "k" <> acc, False)
+    Ok(#("l", rest)) | Ok(#("L", rest)) -> mark_ys_loop(rest, "l" <> acc, False)
+    Ok(#("m", rest)) | Ok(#("M", rest)) -> mark_ys_loop(rest, "m" <> acc, False)
+    Ok(#("n", rest)) | Ok(#("N", rest)) -> mark_ys_loop(rest, "n" <> acc, False)
+    Ok(#("p", rest)) | Ok(#("P", rest)) -> mark_ys_loop(rest, "p" <> acc, False)
+    Ok(#("q", rest)) | Ok(#("Q", rest)) -> mark_ys_loop(rest, "q" <> acc, False)
+    Ok(#("r", rest)) | Ok(#("R", rest)) -> mark_ys_loop(rest, "r" <> acc, False)
+    Ok(#("s", rest)) | Ok(#("S", rest)) -> mark_ys_loop(rest, "s" <> acc, False)
+    Ok(#("t", rest)) | Ok(#("T", rest)) -> mark_ys_loop(rest, "t" <> acc, False)
+    Ok(#("v", rest)) | Ok(#("V", rest)) -> mark_ys_loop(rest, "v" <> acc, False)
+    Ok(#("w", rest)) | Ok(#("W", rest)) -> mark_ys_loop(rest, "w" <> acc, False)
+    Ok(#("x", rest)) | Ok(#("X", rest)) -> mark_ys_loop(rest, "x" <> acc, False)
+    Ok(#("z", rest)) | Ok(#("Z", rest)) -> mark_ys_loop(rest, "z" <> acc, False)
+
+    // not an english word, so won't be stemmed correctly anyway
+    Ok(#(c, rest)) -> mark_ys_loop(rest, c <> acc, False)
+    Error(_) -> acc |> string.reverse
+  }
 }
 
 /// Gets the R1 and R2 region of a word
@@ -717,43 +759,9 @@ pub fn get_r1(stemmer: Stemmer, word: String) -> String {
   }
 }
 
-pub fn remove_initial_apostrophe(word: String) -> String {
-  case word {
-    "'" <> rest -> rest
-    _ -> word
-  }
-}
+const vowels = ["a", "e", "i", "o", "u", "y"]
 
-pub fn mark_consonant_y(word: String) -> String {
-  case string.pop_grapheme(word) {
-    Error(_) -> ""
-    Ok(#(first, _)) -> {
-      let first = case first {
-        "y" -> "Y"
-        _ -> first
-      }
-
-      first
-      <> {
-        let letters = string.to_graphemes(word)
-
-        fn(a, b) {
-          let a_is_vowel = list.contains(vowels, a)
-          case a, b {
-            _, "y" if a_is_vowel -> "Y"
-            _, b -> b
-          }
-        }
-        |> list.map2(letters, list.drop(letters, 1), _)
-        |> list.fold("", fn(a, b) { a <> b })
-      }
-    }
-  }
-}
-
-pub const vowels = ["a", "e", "i", "o", "u", "y"]
-
-pub const consonants = [
+const consonants = [
   "b",
   "c",
   "d",

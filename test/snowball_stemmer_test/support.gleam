@@ -38,7 +38,7 @@ pub fn bench() -> Nil {
   bench.run(
     [bench.Input("all words", test_cases)],
     [
-      bench.SetupFunction("setup", fn(_) {
+      bench.SetupFunction("snowball", fn(_) {
         let stemmer = snowball_stemmer.new()
 
         fn(words) { words |> list.map(snowball_stemmer.stem(stemmer, _)) }
