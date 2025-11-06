@@ -13,6 +13,10 @@ pub opaque type Stemmer {
   )
 }
 
+pub type SnowballWord {
+  SnowballWord(drow: String, length: Int, r2: Int, r1: Int)
+}
+
 /// Creates a new Stemmer object to be used with `stem`.
 /// Can and _should_ be used across multiple calls to `stem` because
 /// it is essentially a cache for the `splitter`s used in the stemming and
@@ -31,6 +35,7 @@ pub fn stem(stemmer: Stemmer, word: String) -> String {
 
   let word = word |> remove_initial_apostrophe |> lowercase_and_mark_ys
 
+  // handle exceptional cases
   case word {
     "skis" -> "ski"
     "skies" -> "sky"
@@ -68,10 +73,7 @@ fn snowball(stemmer: Stemmer, word: String) -> String {
   |> string.reverse
 }
 
-pub type SnowballWord {
-  SnowballWord(drow: String, length: Int, r2: Int, r1: Int)
-}
-
+@internal
 pub fn step0(word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
   case drow {
@@ -85,6 +87,7 @@ pub fn step0(word: SnowballWord) -> SnowballWord {
   }
 }
 
+@internal
 pub fn step1a(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
 
@@ -111,6 +114,7 @@ pub fn step1a(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   }
 }
 
+@internal
 pub fn step1b(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
   let Stemmer(consonant_splitter:, ..) = stemmer
@@ -201,8 +205,12 @@ fn step1b_helper(
 
             _ -> {
               let length_reduction = suffix_length + 1
+              let Stemmer(consonant_splitter:, ..) = stemmer
+              let assert #("", _, rest) =
+                splitter.split(consonant_splitter, mets)
+
               SnowballWord(
-                string.drop_start(mets, 1),
+                rest,
                 length - length_reduction,
                 r2 - length_reduction,
                 r1 - length_reduction,
@@ -239,6 +247,7 @@ fn step1b_helper(
   }
 }
 
+@internal
 pub fn step1c(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
   let Stemmer(consonant_splitter:, ..) = stemmer
@@ -259,6 +268,7 @@ pub fn step1c(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   }
 }
 
+@internal
 pub fn step2(word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
 
@@ -407,6 +417,7 @@ pub fn step2(word: SnowballWord) -> SnowballWord {
   }
 }
 
+@internal
 pub fn step3(word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
 
@@ -460,6 +471,7 @@ pub fn step3(word: SnowballWord) -> SnowballWord {
   }
 }
 
+@internal
 pub fn step4(word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
 
@@ -561,6 +573,7 @@ pub fn step4(word: SnowballWord) -> SnowballWord {
   }
 }
 
+@internal
 pub fn step5(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
   case drow {
@@ -651,14 +664,16 @@ fn syllable_is_short(stemmer: Stemmer, syl: String) -> Bool {
   }
 }
 
+@internal
 pub fn init_word(stemmer: Stemmer, word: String) -> SnowballWord {
-  let length = string.length(word)
+  let length = string.byte_size(word)
   let #(r1, r2) = mark_regions(stemmer, word)
-  let r1 = string.length(r1)
-  let r2 = string.length(r2)
+  let r1 = string.byte_size(r1)
+  let r2 = string.byte_size(r2)
   SnowballWord(string.reverse(word), length, r2, r1)
 }
 
+@internal
 pub fn remove_initial_apostrophe(word: String) -> String {
   case word {
     "'" <> rest -> rest
@@ -666,6 +681,7 @@ pub fn remove_initial_apostrophe(word: String) -> String {
   }
 }
 
+@internal
 pub fn lowercase_and_mark_ys(word: String) -> String {
   mark_ys_loop(word, "", True)
 }
@@ -715,7 +731,7 @@ fn mark_ys_loop(word: String, acc: String, last_vowel: Bool) -> String {
 /// 
 ///  R1 is the region after the first non-vowel following a vowel, or the
 /// end of the word if there is no such non-vowel.
-pub fn mark_regions(stemmer: Stemmer, word: String) -> #(String, String) {
+fn mark_regions(stemmer: Stemmer, word: String) -> #(String, String) {
   let Stemmer(vowel_splitter, consonant_splitter) = stemmer
 
   case get_r1(stemmer, word) {
@@ -733,7 +749,7 @@ pub fn mark_regions(stemmer: Stemmer, word: String) -> #(String, String) {
   }
 }
 
-pub fn get_r1(stemmer: Stemmer, word: String) -> String {
+fn get_r1(stemmer: Stemmer, word: String) -> String {
   case word {
     "gener" <> rest -> rest
     "commun" <> rest -> rest
