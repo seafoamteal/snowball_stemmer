@@ -684,48 +684,78 @@ pub fn lowercase_and_mark_ys(word: String) -> String {
 }
 
 fn mark_ys_loop(word: String, acc: String, last_vowel: Bool) -> String {
-  case string.pop_grapheme(word) {
-    Ok(#("y", rest)) | Ok(#("Y", rest)) -> {
+  case word {
+    "" -> acc
+
+    "y" <> rest | "Y" <> rest ->
       case last_vowel {
-        True -> mark_ys_loop(rest, "Y" <> acc, False)
-        False -> mark_ys_loop(rest, "y" <> acc, True)
+        True -> mark_ys_loop(rest, acc <> "Y", False)
+        False -> mark_ys_loop(rest, acc <> "y", True)
       }
-    }
-    Ok(#("a", rest)) | Ok(#("A", rest)) -> mark_ys_loop(rest, "a" <> acc, True)
-    Ok(#("e", rest)) | Ok(#("E", rest)) -> mark_ys_loop(rest, "e" <> acc, True)
-    Ok(#("i", rest)) | Ok(#("I", rest)) -> mark_ys_loop(rest, "i" <> acc, True)
-    Ok(#("o", rest)) | Ok(#("O", rest)) -> mark_ys_loop(rest, "o" <> acc, True)
-    Ok(#("u", rest)) | Ok(#("U", rest)) -> mark_ys_loop(rest, "u" <> acc, True)
 
-    Ok(#("b", rest)) | Ok(#("B", rest)) -> mark_ys_loop(rest, "b" <> acc, False)
-    Ok(#("c", rest)) | Ok(#("C", rest)) -> mark_ys_loop(rest, "c" <> acc, False)
-    Ok(#("d", rest)) | Ok(#("D", rest)) -> mark_ys_loop(rest, "d" <> acc, False)
-    Ok(#("f", rest)) | Ok(#("F", rest)) -> mark_ys_loop(rest, "f" <> acc, False)
-    Ok(#("g", rest)) | Ok(#("G", rest)) -> mark_ys_loop(rest, "g" <> acc, False)
-    Ok(#("h", rest)) | Ok(#("H", rest)) -> mark_ys_loop(rest, "h" <> acc, False)
-    Ok(#("j", rest)) | Ok(#("J", rest)) -> mark_ys_loop(rest, "j" <> acc, False)
-    Ok(#("k", rest)) | Ok(#("K", rest)) -> mark_ys_loop(rest, "k" <> acc, False)
-    Ok(#("l", rest)) | Ok(#("L", rest)) -> mark_ys_loop(rest, "l" <> acc, False)
-    Ok(#("m", rest)) | Ok(#("M", rest)) -> mark_ys_loop(rest, "m" <> acc, False)
-    Ok(#("n", rest)) | Ok(#("N", rest)) -> mark_ys_loop(rest, "n" <> acc, False)
-    Ok(#("p", rest)) | Ok(#("P", rest)) -> mark_ys_loop(rest, "p" <> acc, False)
-    Ok(#("q", rest)) | Ok(#("Q", rest)) -> mark_ys_loop(rest, "q" <> acc, False)
-    Ok(#("r", rest)) | Ok(#("R", rest)) -> mark_ys_loop(rest, "r" <> acc, False)
-    Ok(#("s", rest)) | Ok(#("S", rest)) -> mark_ys_loop(rest, "s" <> acc, False)
-    Ok(#("t", rest)) | Ok(#("T", rest)) -> mark_ys_loop(rest, "t" <> acc, False)
-    Ok(#("v", rest)) | Ok(#("V", rest)) -> mark_ys_loop(rest, "v" <> acc, False)
-    Ok(#("w", rest)) | Ok(#("W", rest)) -> mark_ys_loop(rest, "w" <> acc, False)
-    Ok(#("x", rest)) | Ok(#("X", rest)) -> mark_ys_loop(rest, "x" <> acc, False)
-    Ok(#("z", rest)) | Ok(#("Z", rest)) -> mark_ys_loop(rest, "z" <> acc, False)
+    "a" as first <> rest
+    | "e" as first <> rest
+    | "i" as first <> rest
+    | "o" as first <> rest
+    | "u" as first <> rest
+    | "A" as first <> rest
+    | "E" as first <> rest
+    | "I" as first <> rest
+    | "O" as first <> rest
+    | "U" as first <> rest -> mark_ys_loop(rest, acc <> first, True)
 
-    // not an english word, so won't be stemmed correctly anyway
-    Ok(#(c, rest)) -> mark_ys_loop(rest, c <> acc, False)
-    Error(_) -> acc |> string.reverse
+    "b" as first <> rest
+    | "c" as first <> rest
+    | "d" as first <> rest
+    | "f" as first <> rest
+    | "g" as first <> rest
+    | "h" as first <> rest
+    | "j" as first <> rest
+    | "k" as first <> rest
+    | "l" as first <> rest
+    | "m" as first <> rest
+    | "n" as first <> rest
+    | "p" as first <> rest
+    | "q" as first <> rest
+    | "r" as first <> rest
+    | "s" as first <> rest
+    | "t" as first <> rest
+    | "v" as first <> rest
+    | "w" as first <> rest
+    | "x" as first <> rest
+    | "z" as first <> rest
+    | "B" as first <> rest
+    | "C" as first <> rest
+    | "D" as first <> rest
+    | "F" as first <> rest
+    | "G" as first <> rest
+    | "H" as first <> rest
+    | "J" as first <> rest
+    | "K" as first <> rest
+    | "L" as first <> rest
+    | "M" as first <> rest
+    | "N" as first <> rest
+    | "P" as first <> rest
+    | "Q" as first <> rest
+    | "R" as first <> rest
+    | "S" as first <> rest
+    | "T" as first <> rest
+    | "V" as first <> rest
+    | "W" as first <> rest
+    | "X" as first <> rest
+    | "Z" as first <> rest -> mark_ys_loop(rest, acc <> first, False)
+
+    _ ->
+      case string.pop_grapheme(word) {
+        // not an english word, so won't be stemmed correctly anyway
+        Ok(#(first, rest)) -> mark_ys_loop(rest, acc <> first, False)
+        Error(_) -> acc
+      }
   }
 }
 
 /// Gets the R1 and R2 region of a word
-/// 
+///
 ///  R1 is the region after the first non-vowel following a vowel, or the
 /// end of the word if there is no such non-vowel.
 fn mark_regions(stemmer: Stemmer, word: String) -> #(String, String) {
