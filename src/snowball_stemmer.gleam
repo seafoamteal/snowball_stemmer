@@ -2,10 +2,6 @@ import gleam/bool
 import gleam/string
 import splitter
 
-pub fn main() -> Nil {
-  Nil
-}
-
 pub opaque type Stemmer {
   Stemmer(
     vowel_splitter: splitter.Splitter,
@@ -13,6 +9,7 @@ pub opaque type Stemmer {
   )
 }
 
+@internal
 pub type SnowballWord {
   SnowballWord(drow: String, length: Int, r2: Int, r1: Int)
 }
