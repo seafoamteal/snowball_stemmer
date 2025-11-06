@@ -623,26 +623,27 @@ fn string_contains_vowel_after_start(stemmer: Stemmer, str: String) -> Bool {
 }
 
 fn word_is_short(stemmer: Stemmer, word: String, r1: Int) -> Bool {
-  use <- bool.guard(r1 > 0, False)
-  syllable_is_short(stemmer, word)
+  case r1 > 0 {
+    True -> False
+    False -> syllable_is_short(stemmer, word)
+  }
 }
 
 fn syllable_is_short(stemmer: Stemmer, syl: String) -> Bool {
-  use <- bool.guard(string.slice(syl, 0, 4) == "tsap", True)
-  let Stemmer(vowel_splitter:, consonant_splitter:) = stemmer
-
-  case splitter.split(consonant_splitter, syl) {
-    #(_, "", "") -> False
-    #("", c, rest) -> {
-      case c {
-        "w" | "x" | "Y" -> {
+  case syl {
+    "tsap" <> _ -> True
+    _ -> {
+      let Stemmer(vowel_splitter:, consonant_splitter:) = stemmer
+      case splitter.split(consonant_splitter, syl) {
+        #(_, "", "") -> False
+        #("", "w", rest) | #("", "x", rest) | #("", "Y", rest) -> {
           case splitter.split(vowel_splitter, rest) {
             #("", _, "") -> True
             _ -> False
           }
         }
 
-        _ -> {
+        #("", _, rest) ->
           case splitter.split(vowel_splitter, rest) {
             #(_, "", "") -> False
             #("", _, rest) ->
@@ -654,10 +655,10 @@ fn syllable_is_short(stemmer: Stemmer, syl: String) -> Bool {
               }
             _ -> False
           }
-        }
+
+        _ -> False
       }
     }
-    _ -> False
   }
 }
 
