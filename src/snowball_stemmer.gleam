@@ -574,57 +574,57 @@ fn mark_ys_loop(word: String, acc: String, last_vowel: Bool) -> String {
         False -> mark_ys_loop(rest, acc <> "y", True)
       }
 
-    "a" as first <> rest
-    | "e" as first <> rest
-    | "i" as first <> rest
-    | "o" as first <> rest
-    | "u" as first <> rest
-    | "A" as first <> rest
-    | "E" as first <> rest
-    | "I" as first <> rest
-    | "O" as first <> rest
-    | "U" as first <> rest -> mark_ys_loop(rest, acc <> first, True)
+    "a" <> rest -> mark_ys_loop(rest, acc <> "a", True)
+    "e" <> rest -> mark_ys_loop(rest, acc <> "e", True)
+    "i" <> rest -> mark_ys_loop(rest, acc <> "i", True)
+    "o" <> rest -> mark_ys_loop(rest, acc <> "o", True)
+    "u" <> rest -> mark_ys_loop(rest, acc <> "u", True)
+    "A" <> rest -> mark_ys_loop(rest, acc <> "a", True)
+    "E" <> rest -> mark_ys_loop(rest, acc <> "e", True)
+    "I" <> rest -> mark_ys_loop(rest, acc <> "i", True)
+    "O" <> rest -> mark_ys_loop(rest, acc <> "o", True)
+    "U" <> rest -> mark_ys_loop(rest, acc <> "u", True)
 
-    "b" as first <> rest
-    | "c" as first <> rest
-    | "d" as first <> rest
-    | "f" as first <> rest
-    | "g" as first <> rest
-    | "h" as first <> rest
-    | "j" as first <> rest
-    | "k" as first <> rest
-    | "l" as first <> rest
-    | "m" as first <> rest
-    | "n" as first <> rest
-    | "p" as first <> rest
-    | "q" as first <> rest
-    | "r" as first <> rest
-    | "s" as first <> rest
-    | "t" as first <> rest
-    | "v" as first <> rest
-    | "w" as first <> rest
-    | "x" as first <> rest
-    | "z" as first <> rest
-    | "B" as first <> rest
-    | "C" as first <> rest
-    | "D" as first <> rest
-    | "F" as first <> rest
-    | "G" as first <> rest
-    | "H" as first <> rest
-    | "J" as first <> rest
-    | "K" as first <> rest
-    | "L" as first <> rest
-    | "M" as first <> rest
-    | "N" as first <> rest
-    | "P" as first <> rest
-    | "Q" as first <> rest
-    | "R" as first <> rest
-    | "S" as first <> rest
-    | "T" as first <> rest
-    | "V" as first <> rest
-    | "W" as first <> rest
-    | "X" as first <> rest
-    | "Z" as first <> rest -> mark_ys_loop(rest, acc <> first, False)
+    "b" <> rest -> mark_ys_loop(rest, acc <> "b", False)
+    "c" <> rest -> mark_ys_loop(rest, acc <> "c", False)
+    "d" <> rest -> mark_ys_loop(rest, acc <> "d", False)
+    "f" <> rest -> mark_ys_loop(rest, acc <> "f", False)
+    "g" <> rest -> mark_ys_loop(rest, acc <> "g", False)
+    "h" <> rest -> mark_ys_loop(rest, acc <> "h", False)
+    "j" <> rest -> mark_ys_loop(rest, acc <> "j", False)
+    "k" <> rest -> mark_ys_loop(rest, acc <> "k", False)
+    "l" <> rest -> mark_ys_loop(rest, acc <> "l", False)
+    "m" <> rest -> mark_ys_loop(rest, acc <> "m", False)
+    "n" <> rest -> mark_ys_loop(rest, acc <> "n", False)
+    "p" <> rest -> mark_ys_loop(rest, acc <> "p", False)
+    "q" <> rest -> mark_ys_loop(rest, acc <> "q", False)
+    "r" <> rest -> mark_ys_loop(rest, acc <> "r", False)
+    "s" <> rest -> mark_ys_loop(rest, acc <> "s", False)
+    "t" <> rest -> mark_ys_loop(rest, acc <> "t", False)
+    "v" <> rest -> mark_ys_loop(rest, acc <> "v", False)
+    "w" <> rest -> mark_ys_loop(rest, acc <> "w", False)
+    "x" <> rest -> mark_ys_loop(rest, acc <> "x", False)
+    "z" <> rest -> mark_ys_loop(rest, acc <> "z", False)
+    "B" <> rest -> mark_ys_loop(rest, acc <> "b", False)
+    "C" <> rest -> mark_ys_loop(rest, acc <> "c", False)
+    "D" <> rest -> mark_ys_loop(rest, acc <> "d", False)
+    "F" <> rest -> mark_ys_loop(rest, acc <> "f", False)
+    "G" <> rest -> mark_ys_loop(rest, acc <> "g", False)
+    "H" <> rest -> mark_ys_loop(rest, acc <> "h", False)
+    "J" <> rest -> mark_ys_loop(rest, acc <> "j", False)
+    "K" <> rest -> mark_ys_loop(rest, acc <> "k", False)
+    "L" <> rest -> mark_ys_loop(rest, acc <> "l", False)
+    "M" <> rest -> mark_ys_loop(rest, acc <> "m", False)
+    "N" <> rest -> mark_ys_loop(rest, acc <> "n", False)
+    "P" <> rest -> mark_ys_loop(rest, acc <> "p", False)
+    "Q" <> rest -> mark_ys_loop(rest, acc <> "q", False)
+    "R" <> rest -> mark_ys_loop(rest, acc <> "r", False)
+    "S" <> rest -> mark_ys_loop(rest, acc <> "s", False)
+    "T" <> rest -> mark_ys_loop(rest, acc <> "t", False)
+    "V" <> rest -> mark_ys_loop(rest, acc <> "v", False)
+    "W" <> rest -> mark_ys_loop(rest, acc <> "w", False)
+    "X" <> rest -> mark_ys_loop(rest, acc <> "x", False)
+    "Z" <> rest -> mark_ys_loop(rest, acc <> "z", False)
 
     _ ->
       case string.pop_grapheme(word) {
