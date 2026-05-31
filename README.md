@@ -4,14 +4,14 @@
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/snowball_stemmer/)
 
 ```sh
-gleam add snowball_stemmer@1
+gleam add snowball_stemmer@2
 ```
 ```gleam
 import snowball_stemmer
 
 pub fn main() {
   let stemmer = snowball_stemmer.new()
-  assert "repeatedly" |> snowball_stemmer.stem(stemmer, _) == "repeat"
+  assert "repeatedly" |> snowball_stemmer.stem(stemmer) == "repeat"
 }
 ```
 

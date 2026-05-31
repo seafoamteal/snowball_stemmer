@@ -24,7 +24,7 @@ fn test_loop(
   case pairs {
     [] -> Ok(acc)
     [pair, ..rest] -> {
-      let stem = snowball_stemmer.stem(stemmer, pair.0)
+      let stem = snowball_stemmer.stem(pair.0, stemmer)
       case stem == pair.1 {
         False -> Error(#(pair.0, pair.1, stem))
         True -> test_loop(stemmer, acc + 1, rest)
@@ -41,7 +41,7 @@ pub fn bench() -> Nil {
       bench.SetupFunction("snowball", fn(_) {
         let stemmer = snowball_stemmer.new()
 
-        fn(words) { words |> list.map(snowball_stemmer.stem(stemmer, _)) }
+        fn(words) { words |> list.map(snowball_stemmer.stem(_, stemmer)) }
       }),
 
       bench.Function("porter", fn(words) {

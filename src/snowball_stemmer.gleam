@@ -30,7 +30,7 @@ pub fn new() -> Stemmer {
 
 /// Returns a word stem according to the  Porter2 / Snowball English
 /// word-stemming algorithm.
-pub fn stem(stemmer: Stemmer, word: String) -> String {
+pub fn stem(word: String, stemmer: Stemmer) -> String {
   case string.byte_size(word) <= 2 {
     True -> word
     False ->
@@ -51,22 +51,22 @@ pub fn stem(stemmer: Stemmer, word: String) -> String {
         "cosmos" -> "cosmos"
         "bias" -> "bias"
         "andes" -> "andes"
-        word -> snowball(stemmer, word)
+        word -> snowball(word, stemmer)
       }
   }
 }
 
-fn snowball(stemmer: Stemmer, word: String) -> String {
+fn snowball(word: String, stemmer: Stemmer) -> String {
   word
-  |> init_word(stemmer, _)
+  |> init_word(stemmer)
   |> step0
-  |> step1a(stemmer, _)
-  |> step1b(stemmer, _)
-  |> step1c(stemmer, _)
+  |> step1a(stemmer)
+  |> step1b(stemmer)
+  |> step1c(stemmer)
   |> step2
   |> step3
   |> step4
-  |> step5(stemmer, _)
+  |> step5(stemmer)
   |> fn(sw) { sw.drow }
   |> string.lowercase
   |> string.reverse
@@ -87,7 +87,7 @@ pub fn step0(word: SnowballWord) -> SnowballWord {
 }
 
 @internal
-pub fn step1a(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
+pub fn step1a(word: SnowballWord, stemmer: Stemmer) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
 
   case drow {
@@ -102,7 +102,7 @@ pub fn step1a(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
     "su" <> _ | "ss" <> _ -> word
 
     "s" <> mets ->
-      case string_contains_vowel_after_start(stemmer, mets) {
+      case string_contains_vowel_after_start(mets, stemmer) {
         False -> word
         True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
       }
@@ -112,7 +112,7 @@ pub fn step1a(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
 }
 
 @internal
-pub fn step1b(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
+pub fn step1b(word: SnowballWord, stemmer: Stemmer) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
   let Stemmer(consonant_splitter:, ..) = stemmer
 
@@ -131,9 +131,9 @@ pub fn step1b(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
         _ -> SnowballWord("ee" <> mets, length - 1, r2 - 1, r1 - 1)
       }
 
-    "ylgni" <> mets -> step1b_helper(stemmer, word, mets, 5)
-    "ylde" <> mets -> step1b_helper(stemmer, word, mets, 4)
-    "de" <> mets -> step1b_helper(stemmer, word, mets, 2)
+    "ylgni" <> mets -> step1b_helper(word, mets, 5, stemmer)
+    "ylde" <> mets -> step1b_helper(word, mets, 4, stemmer)
+    "de" <> mets -> step1b_helper(word, mets, 2, stemmer)
 
     "gni" <> mets -> {
       case mets {
@@ -141,10 +141,10 @@ pub fn step1b(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
         "y" <> prev -> {
           case splitter.split(consonant_splitter, prev) {
             #("", c, "") -> SnowballWord("ei" <> c, length - 2, 0, 0)
-            _ -> step1b_helper(stemmer, word, mets, 3)
+            _ -> step1b_helper(word, mets, 3, stemmer)
           }
         }
-        _ -> step1b_helper(stemmer, word, mets, 3)
+        _ -> step1b_helper(word, mets, 3, stemmer)
       }
     }
 
@@ -153,13 +153,13 @@ pub fn step1b(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
 }
 
 fn step1b_helper(
-  stemmer: Stemmer,
   word: SnowballWord,
   mets: String,
   suffix_length: Int,
+  stemmer: Stemmer,
 ) {
   let SnowballWord(_, length, r2, r1) = word
-  case string_contains_vowel(stemmer, mets) {
+  case string_contains_vowel(mets, stemmer) {
     True -> {
       case mets {
         "ta" <> _ | "lb" <> _ | "zi" <> _ -> {
@@ -207,7 +207,7 @@ fn step1b_helper(
         }
 
         _ -> {
-          case word_is_short(stemmer, mets, r1 - suffix_length) {
+          case word_is_short(mets, r1 - suffix_length, stemmer) {
             True -> {
               let length_reduction = suffix_length - 1
               SnowballWord(
@@ -235,7 +235,7 @@ fn step1b_helper(
 }
 
 @internal
-pub fn step1c(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
+pub fn step1c(word: SnowballWord, stemmer: Stemmer) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
   let Stemmer(consonant_splitter:, ..) = stemmer
 
@@ -460,12 +460,12 @@ pub fn step4(word: SnowballWord) -> SnowballWord {
 }
 
 @internal
-pub fn step5(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
+pub fn step5(word: SnowballWord, stemmer: Stemmer) -> SnowballWord {
   let SnowballWord(drow, length, r2, r1) = word
   case drow {
     "e" <> mets if r2 >= 1 -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
     "e" <> mets ->
-      case r1 >= 1 && !syllable_is_short(stemmer, mets) {
+      case r1 >= 1 && !syllable_is_short(mets, stemmer) {
         True -> SnowballWord(mets, length - 1, r2 - 1, r1 - 1)
         False -> word
       }
@@ -481,7 +481,7 @@ pub fn step5(stemmer: Stemmer, word: SnowballWord) -> SnowballWord {
   }
 }
 
-fn string_contains_vowel(stemmer: Stemmer, str: String) -> Bool {
+fn string_contains_vowel(str: String, stemmer: Stemmer) -> Bool {
   let Stemmer(vowel_splitter:, ..) = stemmer
   case splitter.split(vowel_splitter, str) {
     #(_, "", "") -> False
@@ -489,7 +489,7 @@ fn string_contains_vowel(stemmer: Stemmer, str: String) -> Bool {
   }
 }
 
-fn string_contains_vowel_after_start(stemmer: Stemmer, str: String) -> Bool {
+fn string_contains_vowel_after_start(str: String, stemmer: Stemmer) -> Bool {
   let Stemmer(vowel_splitter:, ..) = stemmer
   case splitter.split(vowel_splitter, str) {
     #(_, "", "") -> False
@@ -502,14 +502,14 @@ fn string_contains_vowel_after_start(stemmer: Stemmer, str: String) -> Bool {
   }
 }
 
-fn word_is_short(stemmer: Stemmer, word: String, r1: Int) -> Bool {
+fn word_is_short(word: String, r1: Int, stemmer: Stemmer) -> Bool {
   case r1 > 0 {
     True -> False
-    False -> syllable_is_short(stemmer, word)
+    False -> syllable_is_short(word, stemmer)
   }
 }
 
-fn syllable_is_short(stemmer: Stemmer, syl: String) -> Bool {
+fn syllable_is_short(syl: String, stemmer: Stemmer) -> Bool {
   case syl {
     "tsap" <> _ -> True
     _ -> {
@@ -543,9 +543,9 @@ fn syllable_is_short(stemmer: Stemmer, syl: String) -> Bool {
 }
 
 @internal
-pub fn init_word(stemmer: Stemmer, word: String) -> SnowballWord {
+pub fn init_word(word: String, stemmer: Stemmer) -> SnowballWord {
   let length = string.byte_size(word)
-  let #(r1, r2) = mark_regions(stemmer, word)
+  let #(r1, r2) = mark_regions(word, stemmer)
   let r1 = string.byte_size(r1)
   let r2 = string.byte_size(r2)
   SnowballWord(string.reverse(word), length, r2, r1)
@@ -639,10 +639,10 @@ fn mark_ys_loop(word: String, acc: String, last_vowel: Bool) -> String {
 ///
 ///  R1 is the region after the first non-vowel following a vowel, or the
 /// end of the word if there is no such non-vowel.
-fn mark_regions(stemmer: Stemmer, word: String) -> #(String, String) {
+fn mark_regions(word: String, stemmer: Stemmer) -> #(String, String) {
   let Stemmer(vowel_splitter, consonant_splitter) = stemmer
 
-  case get_r1(stemmer, word) {
+  case get_r1(word, stemmer) {
     "" -> #("", "")
     r1 -> {
       let #(_, word) = splitter.split_after(vowel_splitter, r1)
@@ -657,7 +657,7 @@ fn mark_regions(stemmer: Stemmer, word: String) -> #(String, String) {
   }
 }
 
-fn get_r1(stemmer: Stemmer, word: String) -> String {
+fn get_r1(word: String, stemmer: Stemmer) -> String {
   case word {
     "gener" <> rest -> rest
     "commun" <> rest -> rest
